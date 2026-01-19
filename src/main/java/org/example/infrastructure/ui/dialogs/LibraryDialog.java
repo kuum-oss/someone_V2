@@ -107,10 +107,14 @@ public class LibraryDialog extends JDialog {
             fileChooser.setSelectedFile(new File(selectedBook.getOriginalName()));
             if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
                 try {
-                    Path source = storageService.getBookPath(selectedBook);
-                    Path target = fileChooser.getSelectedFile().toPath();
-                    Files.copy(source, target, StandardCopyOption.REPLACE_EXISTING);
-                    JOptionPane.showMessageDialog(this, "Файл успешно сохранен!");
+                    byte[] content = storageService.getBookContent(selectedBook.getId());
+                    if (content != null) {
+                        Path target = fileChooser.getSelectedFile().toPath();
+                        Files.write(target, content);
+                        JOptionPane.showMessageDialog(this, "Файл успешно сохранен!");
+                    } else {
+                        JOptionPane.showMessageDialog(this, "Не удалось получить содержимое файла из БД", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                    }
                 } catch (Exception ex) {
                     JOptionPane.showMessageDialog(this, "Ошибка при сохранении файла: " + ex.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
                 }

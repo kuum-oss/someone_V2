@@ -12,7 +12,7 @@ public class JdbcBookRepository implements BookRepository {
 
     @Override
     public StoredBook save(StoredBook book) {
-        String sql = "INSERT INTO books (user_id, title, file_path, original_name, file_size) VALUES (?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO books (user_id, title, file_path, original_name, file_size, file_content) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, book.getUserId());
@@ -20,6 +20,7 @@ public class JdbcBookRepository implements BookRepository {
             ps.setString(3, book.getFilePath());
             ps.setString(4, book.getOriginalName());
             ps.setLong(5, book.getFileSize());
+            ps.setBytes(6, book.getFileContent());
             ps.executeUpdate();
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -36,7 +37,7 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public List<StoredBook> findByUserId(Integer userId) {
         List<StoredBook> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE user_id = ?";
+        String sql = "SELECT id, user_id, title, file_path, original_name, file_size FROM books WHERE user_id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
@@ -73,5 +74,22 @@ public class JdbcBookRepository implements BookRepository {
             throw new RuntimeException("Error calculating total storage size", e);
         }
         return 0;
+    }
+
+    @Override
+    public byte[] getBookContent(Integer bookId) {
+        String sql = "SELECT file_content FROM books WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getBytes("file_content");
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error getting book content", e);
+        }
+        return null;
     }
 }

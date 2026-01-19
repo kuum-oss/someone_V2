@@ -51,19 +51,22 @@ public class DatabaseInitializer {
                         "id INT AUTO_INCREMENT PRIMARY KEY," +
                         "user_id INT NOT NULL," +
                         "title VARCHAR(255) NOT NULL," +
-                        "file_path VARCHAR(512) NOT NULL," +
+                        "file_path VARCHAR(512)," +
                         "original_name VARCHAR(255) NOT NULL," +
                         "file_size BIGINT NOT NULL DEFAULT 0," +
+                        "file_content LONGBLOB," +
                         "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
                         ")";
                 stmt.executeUpdate(createBooksTable);
                 
-                // Пробуем добавить колонку file_size, если таблица уже существует без неё
+                // Пробуем добавить колонки, если таблица уже существует
                 try {
                     stmt.executeUpdate("ALTER TABLE books ADD COLUMN file_size BIGINT NOT NULL DEFAULT 0");
-                } catch (SQLException e) {
-                    // Игнорируем, если колонка уже существует
-                }
+                } catch (SQLException ignored) {}
+                
+                try {
+                    stmt.executeUpdate("ALTER TABLE books ADD COLUMN file_content LONGBLOB");
+                } catch (SQLException ignored) {}
                 
                 LOGGER.info("Tables users and books checked/created.");
             } catch (Exception e) {

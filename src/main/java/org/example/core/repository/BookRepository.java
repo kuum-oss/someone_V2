@@ -7,4 +7,5 @@ public interface BookRepository {
     StoredBook save(StoredBook book);
     List<StoredBook> findByUserId(Integer userId);
     long getTotalSizeByUserId(Integer userId);
+    byte[] getBookContent(Integer bookId);
 }
