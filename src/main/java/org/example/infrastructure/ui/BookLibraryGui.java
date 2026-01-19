@@ -52,6 +52,7 @@ public class BookLibraryGui extends JFrame {
     private JButton organizeButton;
     private JButton cancelButton;
     private JButton exitButton;
+    private JButton searchButton;
     private JButton headerBookInfoButton;
 
     private BookDetailsPanel detailsPanel;
@@ -274,7 +275,7 @@ public class BookLibraryGui extends JFrame {
         searchField.putClientProperty("JTextField.placeholderText", messages.getString("search.placeholder"));
         searchField.addActionListener(e -> filterBooks(searchField.getText()));
         
-        JButton searchButton = new JButton(messages.getString("button.search"));
+        searchButton = new JButton(messages.getString("button.search"));
         searchButton.addActionListener(e -> filterBooks(searchField.getText()));
 
         JButton clearButton = new JButton("X");
@@ -321,8 +322,11 @@ public class BookLibraryGui extends JFrame {
         en.addActionListener(e -> changeLanguage(Locale.ENGLISH));
         JMenuItem ru = new JMenuItem(messages.getString("lang.ru"));
         ru.addActionListener(e -> changeLanguage(new Locale("ru")));
+        JMenuItem uk = new JMenuItem(messages.getString("lang.uk"));
+        uk.addActionListener(e -> changeLanguage(new Locale("uk")));
         lang.add(en);
         lang.add(ru);
+        lang.add(uk);
 
         JMenu theme = new JMenu(messages.getString("menu.theme"));
         JMenuItem light = new JMenuItem(messages.getString("theme.light"));
@@ -433,6 +437,8 @@ public class BookLibraryGui extends JFrame {
         organizeButton.setText(messages.getString("button.organize"));
         cancelButton.setText(messages.getString("button.cancel"));
         exitButton.setText(messages.getString("button.exit"));
+        searchButton.setText(messages.getString("button.search"));
+        headerBookInfoButton.setToolTipText(messages.getString("button.copy_info"));
         root.setUserObject(messages.getString("tree.root"));
         detailsPanel.setMessages(messages);
         if (searchField != null) {
