@@ -1,0 +1,58 @@
+# Структура проекта Book Library Organizer
+
+Проект построен на принципах **Чистой архитектуры (Clean Architecture)** Роберта Мартина. Основная идея заключается в разделении ответственности и направлении зависимостей внутрь к бизнес-логике.
+
+## Архитектурные слои
+
+### 1. Core (Бизнес-логика) - `org.example.core`
+Это ядро системы, которое не зависит от внешних библиотек, баз данных или интерфейса.
+
+*   **Entity** (`org.example.core.entity`):
+    - `Book.java`: Основная бизнес-сущность книги. Инкапсулирует данные о книге (название, автор, путь к файлу, метаданные).
+*   **Use Cases** (`org.example.core.usecase`):
+    - Описывают специфичные для приложения правила (сценарии использования).
+    - `ExtractMetadataUseCase`: Сценарий извлечения метаданных из файла.
+    - `OrganizeBooksUseCase`: Сценарий физической организации библиотеки на диске.
+    - `GroupBooksUseCase`: Логика группировки книг для отображения в интерфейсе.
+*   **Ports (Gateways)** (`org.example.core.usecase.port`):
+    - Интерфейсы, которые определяют, какие данные нужны ядру от внешнего мира.
+    - `MetadataGateway`: Интерфейс для локального извлечения метаданных.
+    - `FileGateway`: Интерфейс для работы с файловой системой.
+    - `ExternalMetadataGateway`: Интерфейс для получения данных из сети (API).
+*   **Utils** (`org.example.core.util`):
+    - `TextNormalizer`: Общая логика обработки текста, очистки имен файлов и нормализации данных.
+    - `TransliterationUtils`: Логика детекции и конвертации транслита (Latin -> Cyrillic).
+
+### 2. Interface Adapters - `org.example.adapter`
+Слой адаптеров, преобразующих данные из формата, удобного для внешних систем, в формат, удобный для Use Cases.
+
+*   **Gateways** (`org.example.adapter.gateway`):
+    - `TikaMetadataAdapter`: Реализация `MetadataGateway` с использованием Apache Tika.
+    - `NioFileAdapter`: Реализация `FileGateway` через стандартный Java NIO.
+    - `ThumbnailCacheService`: Сервис для кэширования обложек на диске.
+
+### 3. Infrastructure (Внешние системы) - `org.example.infrastructure`
+Самый внешний слой: UI, внешние API, конфигурация.
+
+*   **UI** (`org.example.infrastructure.ui`):
+    - `BookLibraryGui`: Главное окно приложения на Swing.
+    - `components/BookDetailsPanel`: Панель с детальной информацией о книге.
+    - `LibraryScanner`: Асинхронный сканер файлов (SwingWorker).
+    - `GenreImageService`: Логика подбора иконок для жанров.
+    - `UiUtils`: Утилиты для настройки окна (размер, центрирование, минимальные габариты).
+*   **External** (`org.example.infrastructure.external`):
+    - `ExternalMetadataGatewayImpl`: Реализация `ExternalMetadataGateway`. Обращается к Google Books API и Open Library для получения недостающей информации.
+
+### 4. Application Root - `org.example`
+*   **Main.java**: Точка входа в приложение. Выполняет роль **Composition Root** — создает все объекты и связывает их (Dependency Injection) согласно архитектуре.
+
+## Основные зависимости и технологии
+- **Apache Tika**: Для извлечения метаданных из PDF, EPUB, FB2, MOBI.
+- **FlatLaf**: Современная тема оформления для Swing.
+- **Jackson**: Обработка JSON ответов от API.
+- **SLF4J**: Логирование.
+
+## Правила зависимости
+Dependencies point **INWARDS**:
+`Infrastructure -> Adapters -> Use Cases -> Entities`
+Ни один класс из слоя Core не знает о существовании Swing, Tika или HttpClient.
