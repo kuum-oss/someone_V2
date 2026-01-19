@@ -29,8 +29,9 @@ public class FileStorageService {
 
         byte[] content = Files.readAllBytes(sourceFile);
         String fileName = sourceFile.getFileName().toString();
+        String filePath = sourceFile.toAbsolutePath().toString();
         
-        StoredBook book = new StoredBook(null, userId, title, null, fileName, fileSize, content);
+        StoredBook book = new StoredBook(null, userId, title, filePath, fileName, fileSize, content);
         bookRepository.save(book);
         LOGGER.info("Book '{}' uploaded to database for user {}", title, userId);
     }

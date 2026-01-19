@@ -39,6 +39,7 @@ public class LibraryDialog extends JDialog {
             }
         };
         table = new JTable(tableModel);
+        table.setAutoCreateRowSorter(true);
         add(new JScrollPane(table), BorderLayout.CENTER);
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
@@ -91,34 +92,33 @@ public class LibraryDialog extends JDialog {
     }
 
     private void downloadSelectedBook() {
-        int row = table.getSelectedRow();
-        if (row == -1) {
+        int viewRow = table.getSelectedRow();
+        if (viewRow == -1) {
             JOptionPane.showMessageDialog(this, "Выберите книгу для скачивания", "Предупреждение", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-        Integer bookId = (Integer) tableModel.getValueAt(row, 0);
-        List<StoredBook> books = storageService.getUserBooks(userId);
-        StoredBook selectedBook = books.stream().filter(b -> b.getId().equals(bookId)).findFirst().orElse(null);
-
-        if (selectedBook != null) {
-            JFileChooser fileChooser = new JFileChooser();
-            fileChooser.setDialogTitle("Сохранить книгу");
-            fileChooser.setSelectedFile(new File(selectedBook.getOriginalName()));
-            if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
-                try {
-                    byte[] content = storageService.getBookContent(selectedBook.getId());
-                    if (content != null) {
-                        Path target = fileChooser.getSelectedFile().toPath();
-                        Files.write(target, content);
-                        JOptionPane.showMessageDialog(this, "Файл успешно сохранен!");
-                    } else {
-                        JOptionPane.showMessageDialog(this, "Не удалось получить содержимое файла из БД", "Ошибка", JOptionPane.ERROR_MESSAGE);
-                    }
-                } catch (Exception ex) {
-                    JOptionPane.showMessageDialog(this, "Ошибка при сохранении файла: " + ex.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
+        int modelRow = table.convertRowIndexToModel(viewRow);
+        Integer bookId = (Integer) tableModel.getValueAt(modelRow, 0);
+        
+        try {
+            byte[] content = storageService.getBookContent(bookId);
+            if (content != null) {
+                String originalName = (String) tableModel.getValueAt(modelRow, 3);
+                JFileChooser fileChooser = new JFileChooser();
+                fileChooser.setDialogTitle("Сохранить книгу");
+                fileChooser.setSelectedFile(new File(originalName));
+                
+                if (fileChooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+                    Path target = fileChooser.getSelectedFile().toPath();
+                    Files.write(target, content);
+                    JOptionPane.showMessageDialog(this, "Файл успешно сохранен!");
                 }
+            } else {
+                JOptionPane.showMessageDialog(this, "Не удалось получить содержимое файла из БД (ID: " + bookId + ")", "Ошибка", JOptionPane.ERROR_MESSAGE);
             }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Ошибка при скачивании или сохранении файла: " + ex.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
         }
     }
 }

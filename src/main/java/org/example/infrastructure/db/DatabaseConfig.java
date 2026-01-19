@@ -41,6 +41,11 @@ public class DatabaseConfig {
         dataSource.setMinIdle(5);
         dataSource.setMaxIdle(10);
         dataSource.setMaxOpenPreparedStatements(100);
+        
+        // Добавляем параметры для работы с большими файлами через JDBC
+        dataSource.addConnectionProperty("maxAllowedPacket", "67108864"); // 64 MB
+        dataSource.addConnectionProperty("useServerPrepStmts", "false");
+        dataSource.addConnectionProperty("rewriteBatchedStatements", "true");
     }
 
     public static Connection getConnection() throws SQLException {

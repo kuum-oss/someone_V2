@@ -65,8 +65,23 @@ public class DatabaseInitializer {
                 } catch (SQLException ignored) {}
                 
                 try {
+                    stmt.executeUpdate("ALTER TABLE books MODIFY COLUMN file_path VARCHAR(512) NULL");
+                } catch (SQLException ignored) {}
+                
+                try {
+                    stmt.executeUpdate("ALTER TABLE books MODIFY COLUMN file_content LONGBLOB");
+                } catch (SQLException ignored) {}
+                
+                try {
                     stmt.executeUpdate("ALTER TABLE books ADD COLUMN file_content LONGBLOB");
                 } catch (SQLException ignored) {}
+                
+                // Также попробуем увеличить max_allowed_packet на уровне сессии (для текущего соединения)
+                try {
+                    stmt.execute("SET GLOBAL max_allowed_packet=67108864");
+                } catch (SQLException e) {
+                    LOGGER.warn("Could not set GLOBAL max_allowed_packet: {}. This might require SUPER privileges.", e.getMessage());
+                }
                 
                 LOGGER.info("Tables users and books checked/created.");
             } catch (Exception e) {

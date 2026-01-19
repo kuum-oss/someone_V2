@@ -17,7 +17,11 @@ public class JdbcBookRepository implements BookRepository {
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, book.getUserId());
             ps.setString(2, book.getTitle());
-            ps.setString(3, book.getFilePath());
+            if (book.getFilePath() != null) {
+                ps.setString(3, book.getFilePath());
+            } else {
+                ps.setNull(3, Types.VARCHAR);
+            }
             ps.setString(4, book.getOriginalName());
             ps.setLong(5, book.getFileSize());
             ps.setBytes(6, book.getFileContent());
@@ -29,7 +33,7 @@ public class JdbcBookRepository implements BookRepository {
                 }
             }
         } catch (SQLException e) {
-            throw new RuntimeException("Error saving book", e);
+            throw new RuntimeException("Error saving book: " + e.getMessage(), e);
         }
         return book;
     }
@@ -84,7 +88,13 @@ public class JdbcBookRepository implements BookRepository {
             ps.setInt(1, bookId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
-                    return rs.getBytes("file_content");
+                    byte[] content = rs.getBytes("file_content");
+                    if (content == null) {
+                        System.err.println("[DEBUG_LOG] file_content is NULL in DB for bookId: " + bookId);
+                    }
+                    return content;
+                } else {
+                    System.err.println("[DEBUG_LOG] No book found with id: " + bookId);
                 }
             }
         } catch (SQLException e) {
