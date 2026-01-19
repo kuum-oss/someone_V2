@@ -11,6 +11,12 @@ import org.example.adapter.gateway.TikaMetadataAdapter;
 import org.example.adapter.gateway.NioFileAdapter;
 import org.example.adapter.gateway.ExternalMetadataGatewayImpl;
 import org.example.adapter.gateway.ThumbnailCacheService;
+import org.example.infrastructure.db.DatabaseInitializer;
+import org.example.infrastructure.repository.JdbcUserRepository;
+import org.example.infrastructure.repository.JdbcBookRepository;
+import org.example.core.service.AuthService;
+import org.example.core.service.FileStorageService;
+import org.example.infrastructure.ui.dialogs.AuthDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -22,6 +28,9 @@ public class Main {
     public static void main(String[] args) {
         try {
             LOGGER.info("Starting application...");
+            
+            // Инициализация БД
+            DatabaseInitializer.initialize();
             
             // Подавляем предупреждения о Log4j2 и нативном доступе
             System.setProperty("log4j2.disable.jmx", "true");
@@ -47,8 +56,12 @@ public class Main {
                     ExtractMetadataUseCaseImpl extractMetadataUseCase = new ExtractMetadataUseCaseImpl(metadataAdapter, externalAdapter);
                     OrganizeBooksUseCaseImpl organizeBooksUseCase = new OrganizeBooksUseCaseImpl(fileAdapter);
                     GroupBooksUseCaseImpl groupBooksUseCase = new GroupBooksUseCaseImpl();
+                    
+                    AuthService authService = new AuthService(new JdbcUserRepository());
+                    FileStorageService storageService = new FileStorageService(new JdbcBookRepository());
 
-                    BookLibraryGui gui = new BookLibraryGui(extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase);
+                    BookLibraryGui gui = new BookLibraryGui(extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, authService, storageService);
+                    
                     gui.setVisible(true);
                     LOGGER.info("GUI is visible.");
                 } catch (Exception e) {

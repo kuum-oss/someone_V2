@@ -10,6 +10,10 @@ import org.example.core.usecase.GroupBooksUseCase;
 import org.example.core.usecase.OrganizeBooksUseCase;
 import org.example.core.util.BookFileUtils;
 import org.example.infrastructure.ui.components.BookDetailsPanel;
+import org.example.core.service.AuthService;
+import org.example.core.service.FileStorageService;
+import org.example.infrastructure.ui.dialogs.AuthDialog;
+import org.example.infrastructure.ui.dialogs.LibraryDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,6 +42,8 @@ public class BookLibraryGui extends JFrame {
     private final ExtractMetadataUseCase extractMetadataUseCase;
     private final OrganizeBooksUseCase organizeBooksUseCase;
     private final GroupBooksUseCase groupBooksUseCase;
+    private final AuthService authService;
+    private final FileStorageService storageService;
     private final GenreImageService genreImageService = new GenreImageService();
 
     private final List<Book> currentBooks = new ArrayList<>();
@@ -59,6 +65,16 @@ public class BookLibraryGui extends JFrame {
     private JTextField searchField;
     private JComboBox<String> groupModeCombo;
 
+    private JMenuItem myLibraryItem;
+    private JMenu accountMenu;
+    private JMenuItem loginItem;
+    private JMenuItem registerItem;
+    private JMenuItem logoutItem;
+    private JMenuItem currentUserItem;
+    private JMenuItem uploadItem;
+    private JMenuItem uploadAllItem;
+    private JMenuItem uploadAllContextItem;
+
     private SwingWorker<?, ?> currentWorker;
     private ResourceBundle messages;
     private Locale currentLocale;
@@ -68,10 +84,14 @@ public class BookLibraryGui extends JFrame {
 
     public BookLibraryGui(ExtractMetadataUseCase extractMetadataUseCase,
                           OrganizeBooksUseCase organizeBooksUseCase,
-                          GroupBooksUseCase groupBooksUseCase) {
+                          GroupBooksUseCase groupBooksUseCase,
+                          AuthService authService,
+                          FileStorageService storageService) {
         this.extractMetadataUseCase = extractMetadataUseCase;
         this.organizeBooksUseCase = organizeBooksUseCase;
         this.groupBooksUseCase = groupBooksUseCase;
+        this.authService = authService;
+        this.storageService = storageService;
 
         initLocale(new Locale(prefs.get("language", "en")));
         initLookAndFeel();
@@ -80,6 +100,24 @@ public class BookLibraryGui extends JFrame {
         setupDragAndDrop();
         setupContextMenus();
         setupHotkeys();
+        updateAuthUI();
+    }
+
+    private void updateAuthUI() {
+        boolean authenticated = authService.isAuthenticated();
+        if (myLibraryItem != null) myLibraryItem.setEnabled(authenticated);
+        if (loginItem != null) loginItem.setVisible(!authenticated);
+        if (registerItem != null) registerItem.setVisible(!authenticated);
+        if (logoutItem != null) logoutItem.setVisible(authenticated);
+        if (currentUserItem != null) {
+            currentUserItem.setVisible(authenticated);
+            if (authenticated && authService.getCurrentUser() != null) {
+                currentUserItem.setText("Аккаунт: " + authService.getCurrentUser().getEmail());
+            }
+        }
+        if (uploadItem != null) uploadItem.setVisible(authenticated);
+        if (uploadAllItem != null) uploadAllItem.setEnabled(authenticated);
+        if (uploadAllContextItem != null) uploadAllContextItem.setVisible(authenticated);
     }
 
     /* ===================== INIT ===================== */
@@ -119,8 +157,20 @@ public class BookLibraryGui extends JFrame {
                 updateTree(currentBooks);
             }
         });
+        uploadItem = new JMenuItem("Загрузить на сервер");
+        uploadItem.addActionListener(e -> {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+            if (node != null && node.getUserObject() instanceof Book book) {
+                uploadBookToServer(book);
+            }
+        });
+        uploadAllContextItem = new JMenuItem("Загрузить всё на сервер");
+        uploadAllContextItem.addActionListener(e -> uploadAllBooksToServer());
+
         popupMenu.add(openItem);
         popupMenu.add(showInFolderItem);
+        popupMenu.add(uploadItem);
+        popupMenu.add(uploadAllContextItem);
         popupMenu.addSeparator();
         popupMenu.add(removeItem);
 
@@ -314,6 +364,58 @@ public class BookLibraryGui extends JFrame {
 
     private void initMenuBar() {
         JMenuBar bar = new JMenuBar();
+
+        // Библиотека
+        JMenu libraryMenu = new JMenu("Библиотека");
+        myLibraryItem = new JMenuItem("Моя библиотека");
+        myLibraryItem.addActionListener(e -> {
+            if (authService.isAuthenticated()) {
+                new LibraryDialog(this, authService.getCurrentUser().getId(), storageService).setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(this, "Пожалуйста, авторизуйтесь", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            }
+        });
+        libraryMenu.add(myLibraryItem);
+        
+        uploadAllItem = new JMenuItem("Загрузить все книги на сервер");
+        uploadAllItem.addActionListener(e -> uploadAllBooksToServer());
+        libraryMenu.add(uploadAllItem);
+
+        bar.add(libraryMenu);
+
+        // Аккаунт
+        accountMenu = new JMenu("Аккаунт");
+        loginItem = new JMenuItem("Войти");
+        loginItem.addActionListener(e -> {
+            AuthDialog dialog = new AuthDialog(this, authService);
+            dialog.setVisible(true);
+            if (dialog.isSucceeded()) {
+                updateAuthUI();
+            }
+        });
+        registerItem = new JMenuItem("Регистрация");
+        registerItem.addActionListener(e -> {
+            // В AuthDialog уже есть вкладка регистрации
+            AuthDialog dialog = new AuthDialog(this, authService);
+            dialog.setVisible(true);
+            if (dialog.isSucceeded()) {
+                updateAuthUI();
+            }
+        });
+        logoutItem = new JMenuItem("Выйти");
+        logoutItem.addActionListener(e -> {
+            authService.logout();
+            updateAuthUI();
+            JOptionPane.showMessageDialog(this, "Вы вышли из аккаунта");
+        });
+        currentUserItem = new JMenuItem("");
+        currentUserItem.setEnabled(false);
+
+        accountMenu.add(currentUserItem);
+        accountMenu.add(loginItem);
+        accountMenu.add(registerItem);
+        accountMenu.add(logoutItem);
+        bar.add(accountMenu);
 
         JMenu settings = new JMenu(messages.getString("menu.settings"));
 
@@ -752,4 +854,87 @@ public class BookLibraryGui extends JFrame {
         System.exit(0);
     }
 
+    private void uploadBookToServer(Book book) {
+        if (!authService.isAuthenticated()) {
+            JOptionPane.showMessageDialog(this, "Пожалуйста, авторизуйтесь для загрузки книг", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        try {
+            storageService.uploadBook(authService.getCurrentUser().getId(), book.getFilePath(), book.getTitle());
+            JOptionPane.showMessageDialog(this, "Книга успешно загружена на сервер!");
+        } catch (IOException e) {
+            LOGGER.error("Error uploading book", e);
+            JOptionPane.showMessageDialog(this, "Ошибка при загрузке книги: " + e.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void uploadAllBooksToServer() {
+        if (!authService.isAuthenticated()) {
+            JOptionPane.showMessageDialog(this, "Пожалуйста, авторизуйтесь для загрузки книг", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+        if (currentBooks.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Список книг пуст");
+            return;
+        }
+
+        int choice = JOptionPane.showConfirmDialog(this,
+                "Вы уверены, что хотите загрузить все книги (" + currentBooks.size() + ") на сервер?",
+                "Подтверждение", JOptionPane.YES_NO_OPTION);
+        
+        if (choice != JOptionPane.YES_OPTION) return;
+
+        progressBar.setVisible(true);
+        progressBar.setValue(0);
+        progressBar.setMaximum(currentBooks.size());
+        uploadAllItem.setEnabled(false);
+        uploadAllContextItem.setEnabled(false);
+
+        SwingWorker<Void, Integer> worker = new SwingWorker<>() {
+            private int successCount = 0;
+            private int failCount = 0;
+            private String lastError = "";
+
+            @Override
+            protected Void doInBackground() throws Exception {
+                Integer userId = authService.getCurrentUser().getId();
+                for (int i = 0; i < currentBooks.size(); i++) {
+                    if (isCancelled()) break;
+                    Book book = currentBooks.get(i);
+                    try {
+                        storageService.uploadBook(userId, book.getFilePath(), book.getTitle());
+                        successCount++;
+                    } catch (Exception e) {
+                        LOGGER.error("Error uploading book: {}", book.getTitle(), e);
+                        failCount++;
+                        lastError = e.getMessage();
+                    }
+                    publish(i + 1);
+                }
+                return null;
+            }
+
+            @Override
+            protected void process(List<Integer> chunks) {
+                int latest = chunks.get(chunks.size() - 1);
+                progressBar.setValue(latest);
+                statusLabel.setText("Загрузка книг: " + latest + " из " + currentBooks.size());
+            }
+
+            @Override
+            protected void done() {
+                progressBar.setVisible(false);
+                uploadAllItem.setEnabled(true);
+                uploadAllContextItem.setEnabled(true);
+                statusLabel.setText("Загрузка завершена. Успешно: " + successCount + ", Ошибок: " + failCount);
+                
+                String message = "Загрузка завершена!\nУспешно: " + successCount;
+                if (failCount > 0) {
+                    message += "\nОшибок: " + failCount + "\nПоследняя ошибка: " + lastError;
+                }
+                JOptionPane.showMessageDialog(BookLibraryGui.this, message);
+            }
+        };
+        worker.execute();
+    }
 }
