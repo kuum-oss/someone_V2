@@ -43,7 +43,9 @@ public class DatabaseInitializer {
                 String createUsersTable = "CREATE TABLE IF NOT EXISTS users (" +
                         "id INT AUTO_INCREMENT PRIMARY KEY," +
                         "email VARCHAR(255) NOT NULL UNIQUE," +
-                        "password VARCHAR(255) NOT NULL" +
+                        "password VARCHAR(255) NOT NULL," +
+                        "is_admin BOOLEAN NOT NULL DEFAULT FALSE," +
+                        "points INT NOT NULL DEFAULT 5" +
                         ")";
                 stmt.executeUpdate(createUsersTable);
                 
@@ -51,17 +53,53 @@ public class DatabaseInitializer {
                         "id INT AUTO_INCREMENT PRIMARY KEY," +
                         "user_id INT NOT NULL," +
                         "title VARCHAR(255) NOT NULL," +
+                        "author VARCHAR(255)," +
+                        "genre VARCHAR(100)," +
+                        "year VARCHAR(20)," +
+                        "series VARCHAR(255)," +
+                        "series_index INT," +
+                        "language VARCHAR(50)," +
+                        "description TEXT," +
+                        "cover MEDIUMBLOB," +
+                        "author_photo MEDIUMBLOB," +
                         "file_path VARCHAR(512)," +
                         "original_name VARCHAR(255) NOT NULL," +
                         "file_size BIGINT NOT NULL DEFAULT 0," +
                         "file_content LONGBLOB," +
+                        "is_public BOOLEAN NOT NULL DEFAULT FALSE," +
                         "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
                         ")";
                 stmt.executeUpdate(createBooksTable);
                 
                 // Пробуем добавить колонки, если таблица уже существует
+                String[] columnsToAdd = {
+                    "ALTER TABLE books ADD COLUMN author VARCHAR(255)",
+                    "ALTER TABLE books ADD COLUMN genre VARCHAR(100)",
+                    "ALTER TABLE books ADD COLUMN year VARCHAR(20)",
+                    "ALTER TABLE books ADD COLUMN series VARCHAR(255)",
+                    "ALTER TABLE books ADD COLUMN series_index INT",
+                    "ALTER TABLE books ADD COLUMN language VARCHAR(50)",
+                    "ALTER TABLE books ADD COLUMN description TEXT",
+                    "ALTER TABLE books ADD COLUMN cover MEDIUMBLOB",
+                    "ALTER TABLE books ADD COLUMN author_photo MEDIUMBLOB"
+                };
+
+                for (String sql : columnsToAdd) {
+                    try {
+                        stmt.executeUpdate(sql);
+                    } catch (SQLException ignored) {}
+                }
+
                 try {
-                    stmt.executeUpdate("ALTER TABLE books ADD COLUMN file_size BIGINT NOT NULL DEFAULT 0");
+                    stmt.executeUpdate("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE");
+                } catch (SQLException ignored) {}
+                
+                try {
+                    stmt.executeUpdate("ALTER TABLE users ADD COLUMN points INT NOT NULL DEFAULT 5");
+                } catch (SQLException ignored) {}
+
+                try {
+                    stmt.executeUpdate("ALTER TABLE books ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT FALSE");
                 } catch (SQLException ignored) {}
                 
                 try {

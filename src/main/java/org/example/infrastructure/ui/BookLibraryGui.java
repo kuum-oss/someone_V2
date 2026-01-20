@@ -10,6 +10,7 @@ import org.example.core.usecase.GroupBooksUseCase;
 import org.example.core.usecase.OrganizeBooksUseCase;
 import org.example.core.util.BookFileUtils;
 import org.example.infrastructure.ui.components.BookDetailsPanel;
+import org.example.core.service.AdminService;
 import org.example.core.service.AuthService;
 import org.example.core.service.FileStorageService;
 import org.example.infrastructure.ui.dialogs.AuthDialog;
@@ -44,22 +45,30 @@ public class BookLibraryGui extends JFrame {
     private final GroupBooksUseCase groupBooksUseCase;
     private final AuthService authService;
     private final FileStorageService storageService;
+    private final AdminService adminService;
     private final GenreImageService genreImageService = new GenreImageService();
 
     private final List<Book> currentBooks = new ArrayList<>();
     private final Preferences prefs = Preferences.userNodeForPackage(BookLibraryGui.class);
+
+    private enum ViewMode { LIBRARY, SHOP }
+    private ViewMode viewMode = ViewMode.LIBRARY;
 
     private DefaultMutableTreeNode root;
     private DefaultTreeModel treeModel;
     private JTree tree;
 
     private JLabel statusLabel;
+    private JLabel pointsLabel;
     private JProgressBar progressBar;
     private JButton organizeButton;
     private JButton cancelButton;
     private JButton exitButton;
     private JButton searchButton;
     private JButton headerBookInfoButton;
+    private JButton shopButton;
+    private JButton libraryButton;
+    private JButton addPointButton;
 
     private BookDetailsPanel detailsPanel;
     private JTextField searchField;
@@ -74,6 +83,7 @@ public class BookLibraryGui extends JFrame {
     private JMenuItem uploadItem;
     private JMenuItem uploadAllItem;
     private JMenuItem uploadAllContextItem;
+    private JMenuItem uploadToShopItem;
 
     private SwingWorker<?, ?> currentWorker;
     private ResourceBundle messages;
@@ -86,12 +96,14 @@ public class BookLibraryGui extends JFrame {
                           OrganizeBooksUseCase organizeBooksUseCase,
                           GroupBooksUseCase groupBooksUseCase,
                           AuthService authService,
-                          FileStorageService storageService) {
+                          FileStorageService storageService,
+                          AdminService adminService) {
         this.extractMetadataUseCase = extractMetadataUseCase;
         this.organizeBooksUseCase = organizeBooksUseCase;
         this.groupBooksUseCase = groupBooksUseCase;
         this.authService = authService;
         this.storageService = storageService;
+        this.adminService = adminService;
 
         initLocale(new Locale(prefs.get("language", "en")));
         initLookAndFeel();
@@ -118,6 +130,21 @@ public class BookLibraryGui extends JFrame {
         if (uploadItem != null) uploadItem.setVisible(authenticated);
         if (uploadAllItem != null) uploadAllItem.setEnabled(authenticated);
         if (uploadAllContextItem != null) uploadAllContextItem.setVisible(authenticated);
+
+        if (pointsLabel != null) {
+            pointsLabel.setVisible(authenticated);
+            if (authenticated && authService.getCurrentUser() != null) {
+                pointsLabel.setText(MessageFormat.format(messages.getString("user.points"), authService.getCurrentUser().getPoints()));
+            }
+        }
+        if (addPointButton != null) addPointButton.setVisible(authenticated);
+        if (shopButton != null) shopButton.setEnabled(authenticated);
+        if (libraryButton != null) libraryButton.setEnabled(authenticated && viewMode == ViewMode.SHOP);
+        if (shopButton != null) shopButton.setEnabled(authenticated && viewMode == ViewMode.LIBRARY);
+        
+        if (uploadToShopItem != null) {
+            uploadToShopItem.setVisible(authenticated && authService.getCurrentUser().isAdmin());
+        }
     }
 
     /* ===================== INIT ===================== */
@@ -167,9 +194,18 @@ public class BookLibraryGui extends JFrame {
         uploadAllContextItem = new JMenuItem("Загрузить всё на сервер");
         uploadAllContextItem.addActionListener(e -> uploadAllBooksToServer());
 
+        uploadToShopItem = new JMenuItem(messages.getString("menu.upload_to_shop"));
+        uploadToShopItem.addActionListener(e -> {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+            if (node != null && node.getUserObject() instanceof Book book) {
+                uploadToShop(book);
+            }
+        });
+
         popupMenu.add(openItem);
         popupMenu.add(showInFolderItem);
         popupMenu.add(uploadItem);
+        popupMenu.add(uploadToShopItem);
         popupMenu.add(uploadAllContextItem);
         popupMenu.addSeparator();
         popupMenu.add(removeItem);
@@ -235,6 +271,12 @@ public class BookLibraryGui extends JFrame {
         tree.setCellRenderer(new BookTreeCellRenderer());
 
         detailsPanel = new BookDetailsPanel(messages);
+        detailsPanel.setBuyAction(e -> {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+            if (node != null && node.getUserObject() instanceof Book book) {
+                buyBook(book);
+            }
+        });
         add(detailsPanel, BorderLayout.EAST);
 
         tree.addTreeSelectionListener(e -> {
@@ -281,6 +323,20 @@ public class BookLibraryGui extends JFrame {
         exitButton = new JButton(messages.getString("button.exit"));
         exitButton.addActionListener(e -> exitApplication());
 
+        libraryButton = new JButton(messages.getString("button.library"));
+        libraryButton.addActionListener(e -> switchToLibrary());
+        libraryButton.setEnabled(false);
+
+        shopButton = new JButton(messages.getString("button.shop"));
+        shopButton.addActionListener(e -> switchToShop());
+
+        pointsLabel = new JLabel();
+        pointsLabel.setVisible(false);
+
+        addPointButton = new JButton(messages.getString("button.add_point"));
+        addPointButton.setVisible(false);
+        addPointButton.addActionListener(e -> addTestPoint());
+
         headerBookInfoButton = new JButton("");
         headerBookInfoButton.setVisible(false);
         headerBookInfoButton.setToolTipText(messages.getString("button.copy_info"));
@@ -304,8 +360,16 @@ public class BookLibraryGui extends JFrame {
             }
         });
 
+        JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        modePanel.add(libraryButton);
+        modePanel.add(shopButton);
+        modePanel.add(new JSeparator(SwingConstants.VERTICAL));
+        modePanel.add(pointsLabel);
+        modePanel.add(addPointButton);
+        modePanel.add(headerBookInfoButton);
+
         JPanel top = new JPanel(new BorderLayout());
-        top.add(headerBookInfoButton, BorderLayout.WEST);
+        top.add(modePanel, BorderLayout.WEST);
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT));
         buttons.add(exitButton);
@@ -860,7 +924,7 @@ public class BookLibraryGui extends JFrame {
             return;
         }
         try {
-            storageService.uploadBook(authService.getCurrentUser().getId(), book.getFilePath(), book.getTitle());
+            storageService.uploadBook(authService.getCurrentUser().getId(), book, false);
             JOptionPane.showMessageDialog(this, "Книга успешно загружена на сервер!");
         } catch (IOException e) {
             LOGGER.error("Error uploading book", e);
@@ -902,7 +966,7 @@ public class BookLibraryGui extends JFrame {
                     if (isCancelled()) break;
                     Book book = currentBooks.get(i);
                     try {
-                        storageService.uploadBook(userId, book.getFilePath(), book.getTitle());
+                        storageService.uploadBook(userId, book, false);
                         successCount++;
                     } catch (Exception e) {
                         LOGGER.error("Error uploading book: {}", book.getTitle(), e);
@@ -936,5 +1000,102 @@ public class BookLibraryGui extends JFrame {
             }
         };
         worker.execute();
+    }
+
+    private void switchToLibrary() {
+        viewMode = ViewMode.LIBRARY;
+        updateAuthUI();
+        detailsPanel.setBuyButtonVisible(false);
+        updateTree(currentBooks);
+    }
+
+    private void switchToShop() {
+        if (!authService.isAuthenticated()) return;
+        viewMode = ViewMode.SHOP;
+        updateAuthUI();
+        detailsPanel.setBuyButtonVisible(true);
+        loadShopBooks();
+    }
+
+    private void loadShopBooks() {
+        SwingWorker<List<Book>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<Book> doInBackground() {
+                return storageService.getPublicBooks().stream()
+                        .map(sb -> Book.builder()
+                                .title(sb.getTitle())
+                                .author(sb.getAuthor())
+                                .genre(sb.getGenre())
+                                .year(sb.getYear())
+                                .series(sb.getSeries())
+                                .seriesIndex(sb.getSeriesIndex())
+                                .language(sb.getLanguage())
+                                .description(sb.getDescription())
+                                .cover(sb.getCover())
+                                .authorPhoto(sb.getAuthorPhoto())
+                                .databaseId(sb.getId())
+                                .isPublic(true)
+                                .build())
+                        .toList();
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    updateTree(get());
+                } catch (Exception e) {
+                    LOGGER.error("Error loading shop books", e);
+                }
+            }
+        };
+        worker.execute();
+    }
+
+    private void buyBook(Book book) {
+        if (authService.getCurrentUser().getPoints() <= 0) {
+            JOptionPane.showMessageDialog(this, messages.getString("msg.not_enough_points"), "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        int newPoints = authService.getCurrentUser().getPoints() - 1;
+        authService.updateCurrentUserPoints(newPoints);
+        updateAuthUI();
+
+        // Copy book to user's library in DB
+        SwingWorker<Void, Void> worker = new SwingWorker<>() {
+            @Override
+            protected Void doInBackground() throws Exception {
+                org.example.core.entity.StoredBook sb = org.example.core.entity.StoredBook.builder()
+                        .id(book.getDatabaseId())
+                        .build();
+                storageService.purchaseBook(authService.getCurrentUser().getId(), sb);
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                JOptionPane.showMessageDialog(BookLibraryGui.this, messages.getString("msg.buy_success"));
+            }
+        };
+        worker.execute();
+    }
+
+    private void addTestPoint() {
+        if (authService.isAuthenticated()) {
+            authService.updateCurrentUserPoints(authService.getCurrentUser().getPoints() + 1);
+            updateAuthUI();
+        }
+    }
+
+    private void uploadToShop(Book book) {
+        if (!adminService.isAdmin()) return;
+        
+        try {
+            adminService.uploadToShop(book);
+            JOptionPane.showMessageDialog(this, "Книга успешно загружена в магазин!");
+        } catch (IOException e) {
+            LOGGER.error("Error uploading to shop", e);
+            JOptionPane.showMessageDialog(this, "Ошибка: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 }

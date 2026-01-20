@@ -17,12 +17,12 @@ public class AuthService {
         this.passwordEncoder = new BCryptPasswordEncoder();
     }
 
-    public boolean register(String email, String password) {
+    public boolean register(String email, String password, boolean isAdmin) {
         if (userRepository.findByEmail(email).isPresent()) {
             return false;
         }
         String encodedPassword = passwordEncoder.encode(password);
-        userRepository.save(new User(null, email, encodedPassword));
+        userRepository.save(new User(null, email, encodedPassword, isAdmin, 5));
         return true;
     }
 
@@ -41,6 +41,13 @@ public class AuthService {
 
     public User getCurrentUser() {
         return currentUser;
+    }
+
+    public void updateCurrentUserPoints(int newPoints) {
+        if (currentUser != null) {
+            userRepository.updatePoints(currentUser.getId(), newPoints);
+            currentUser.setPoints(newPoints);
+        }
     }
     
     public boolean isAuthenticated() {

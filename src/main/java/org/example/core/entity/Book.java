@@ -17,6 +17,8 @@ public class Book {
     private final String description;
     private byte[] cover;
     private byte[] authorPhoto;
+    private Integer databaseId;
+    private boolean isPublic;
 
     // We can use a small cache or just keep them as is, 
     // but the recommendation was to consider memory.
@@ -34,11 +36,13 @@ public class Book {
         this.genre = (b.genre == null || b.genre.isBlank()) ? "General" : b.genre;
         this.language = (b.language == null || b.language.isBlank()) ? "Unknown" : b.language;
         this.year = (b.year == null || b.year.isBlank()) ? "Unknown" : b.year;
-        this.filePath = Objects.requireNonNull(b.filePath, "filePath required");
+        this.filePath = b.filePath; // Allow null for cloud books
         this.format = Objects.requireNonNullElse(b.format, "");
         this.description = Objects.requireNonNullElse(b.description, "");
         this.cover = b.cover;
         this.authorPhoto = b.authorPhoto;
+        this.databaseId = b.databaseId;
+        this.isPublic = b.isPublic;
     }
 
     public String getTitle() { return title; }
@@ -53,6 +57,8 @@ public class Book {
     public String getDescription() { return description; }
     public byte[] getCover() { return cover; }
     public byte[] getAuthorPhoto() { return authorPhoto; }
+    public Integer getDatabaseId() { return databaseId; }
+    public boolean isPublic() { return isPublic; }
 
     @Override
     public boolean equals(Object o) {
@@ -95,6 +101,8 @@ public class Book {
         private String description;
         private byte[] cover;
         private byte[] authorPhoto;
+        private Integer databaseId;
+        private boolean isPublic;
 
         public Builder title(String v) { title = v; return this; }
         public Builder author(String v) { author = v; return this; }
@@ -108,6 +116,8 @@ public class Book {
         public Builder description(String v) { description = v; return this; }
         public Builder cover(byte[] v) { cover = v; return this; }
         public Builder authorPhoto(byte[] v) { authorPhoto = v; return this; }
+        public Builder databaseId(Integer v) { databaseId = v; return this; }
+        public Builder isPublic(boolean v) { isPublic = v; return this; }
 
         public Book build() { return new Book(this); }
     }

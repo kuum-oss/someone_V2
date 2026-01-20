@@ -16,6 +16,7 @@ public class BookDetailsPanel extends JPanel {
     private final JButton copyButton;
     private final JButton descriptionButton;
     private final JButton youtubeButton;
+    private final JButton buyButton;
     private ResourceBundle messages;
     private Book currentBook;
 
@@ -52,6 +53,11 @@ public class BookDetailsPanel extends JPanel {
         youtubeButton = new JButton(messages.getString("button.youtube"));
         youtubeButton.addActionListener(e -> watchReview());
         youtubeButton.setVisible(false);
+
+        buyButton = new JButton(messages.getString("button.buy"));
+        buyButton.setVisible(false);
+        buyButton.setBackground(new Color(46, 139, 87));
+        buyButton.setForeground(Color.WHITE);
         try {
             java.net.URL iconUrl = getClass().getResource("/icons/youtube.png");
             if (iconUrl != null) {
@@ -68,7 +74,8 @@ public class BookDetailsPanel extends JPanel {
         photos.add(coverLabel);
         photos.add(authorPhotoLabel);
 
-        JPanel buttonPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        JPanel buttonPanel = new JPanel(new GridLayout(4, 1, 0, 5));
+        buttonPanel.add(buyButton);
         buttonPanel.add(copyButton);
         buttonPanel.add(descriptionButton);
         buttonPanel.add(youtubeButton);
@@ -177,6 +184,17 @@ public class BookDetailsPanel extends JPanel {
         }
     }
 
+    public void setBuyAction(java.awt.event.ActionListener action) {
+        for (java.awt.event.ActionListener al : buyButton.getActionListeners()) {
+            buyButton.removeActionListener(al);
+        }
+        buyButton.addActionListener(action);
+    }
+
+    public void setBuyButtonVisible(boolean visible) {
+        buyButton.setVisible(visible);
+    }
+
     public void setMessages(ResourceBundle messages) {
         this.messages = messages;
         updateBorder();
@@ -184,6 +202,7 @@ public class BookDetailsPanel extends JPanel {
         copyButton.setText(messages.getString("button.copy_info"));
         descriptionButton.setText(messages.getString("button.description"));
         youtubeButton.setText(messages.getString("button.youtube"));
+        buyButton.setText(messages.getString("button.buy"));
         if (currentBook != null) {
             updateDetails(currentBook);
         }

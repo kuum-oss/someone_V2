@@ -8,12 +8,27 @@ public class StoredBook {
     private String originalName;
     private long fileSize;
     private byte[] fileContent;
+    private boolean isPublic;
+
+    private String author;
+    private String genre;
+    private String year;
+    private String series;
+    private Integer seriesIndex;
+    private String language;
+    private String description;
+    private byte[] cover;
+    private byte[] authorPhoto;
 
     public StoredBook(Integer id, Integer userId, String title, String filePath, String originalName, long fileSize) {
-        this(id, userId, title, filePath, originalName, fileSize, null);
+        this(id, userId, title, filePath, originalName, fileSize, null, false);
     }
 
     public StoredBook(Integer id, Integer userId, String title, String filePath, String originalName, long fileSize, byte[] fileContent) {
+        this(id, userId, title, filePath, originalName, fileSize, fileContent, false);
+    }
+
+    public StoredBook(Integer id, Integer userId, String title, String filePath, String originalName, long fileSize, byte[] fileContent, boolean isPublic) {
         this.id = id;
         this.userId = userId;
         this.title = title;
@@ -21,6 +36,63 @@ public class StoredBook {
         this.originalName = originalName;
         this.fileSize = fileSize;
         this.fileContent = fileContent;
+        this.isPublic = isPublic;
+    }
+
+    public static Builder builder() {
+        return new Builder();
+    }
+
+    public static class Builder {
+        private Integer id;
+        private Integer userId;
+        private String title;
+        private String filePath;
+        private String originalName;
+        private long fileSize;
+        private byte[] fileContent;
+        private boolean isPublic;
+        private String author;
+        private String genre;
+        private String year;
+        private String series;
+        private Integer seriesIndex;
+        private String language;
+        private String description;
+        private byte[] cover;
+        private byte[] authorPhoto;
+
+        public Builder id(Integer id) { this.id = id; return this; }
+        public Builder userId(Integer userId) { this.userId = userId; return this; }
+        public Builder title(String title) { this.title = title; return this; }
+        public Builder filePath(String filePath) { this.filePath = filePath; return this; }
+        public Builder originalName(String originalName) { this.originalName = originalName; return this; }
+        public Builder fileSize(long fileSize) { this.fileSize = fileSize; return this; }
+        public Builder fileContent(byte[] fileContent) { this.fileContent = fileContent; return this; }
+        public Builder isPublic(boolean isPublic) { this.isPublic = isPublic; return this; }
+        public Builder author(String author) { this.author = author; return this; }
+        public Builder genre(String genre) { this.genre = genre; return this; }
+        public Builder year(String year) { this.year = year; return this; }
+        public Builder series(String series) { this.series = series; return this; }
+        public Builder seriesIndex(Integer seriesIndex) { this.seriesIndex = seriesIndex; return this; }
+        public Builder language(String language) { this.language = language; return this; }
+        public Builder description(String description) { this.description = description; return this; }
+        public Builder cover(byte[] cover) { this.cover = cover; return this; }
+        public Builder authorPhoto(byte[] authorPhoto) { this.authorPhoto = authorPhoto; return this; }
+
+        public StoredBook build() {
+            StoredBook sb = new StoredBook(id, userId, title, filePath, originalName, fileSize, fileContent, isPublic);
+            sb.author = author;
+            sb.genre = genre;
+            sb.year = year;
+            sb.series = series;
+            sb.seriesIndex = seriesIndex;
+            sb.language = language;
+            sb.description = description;
+            sb.cover = cover;
+            sb.authorPhoto = authorPhoto;
+            return sb;
+        }
     }
 
     public Integer getId() { return id; }
@@ -30,4 +102,14 @@ public class StoredBook {
     public String getOriginalName() { return originalName; }
     public long getFileSize() { return fileSize; }
     public byte[] getFileContent() { return fileContent; }
+    public boolean isPublic() { return isPublic; }
+    public String getAuthor() { return author; }
+    public String getGenre() { return genre; }
+    public String getYear() { return year; }
+    public String getSeries() { return series; }
+    public Integer getSeriesIndex() { return seriesIndex; }
+    public String getLanguage() { return language; }
+    public String getDescription() { return description; }
+    public byte[] getCover() { return cover; }
+    public byte[] getAuthorPhoto() { return authorPhoto; }
 }

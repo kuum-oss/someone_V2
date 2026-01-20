@@ -14,6 +14,7 @@ import org.example.adapter.gateway.ThumbnailCacheService;
 import org.example.infrastructure.db.DatabaseInitializer;
 import org.example.infrastructure.repository.JdbcUserRepository;
 import org.example.infrastructure.repository.JdbcBookRepository;
+import org.example.core.service.AdminService;
 import org.example.core.service.AuthService;
 import org.example.core.service.FileStorageService;
 import org.example.infrastructure.ui.dialogs.AuthDialog;
@@ -58,9 +59,10 @@ public class Main {
                     GroupBooksUseCaseImpl groupBooksUseCase = new GroupBooksUseCaseImpl();
                     
                     AuthService authService = new AuthService(new JdbcUserRepository());
-                    FileStorageService storageService = new FileStorageService(new JdbcBookRepository());
+                    FileStorageService storageService = new FileStorageService(new JdbcBookRepository(), authService);
+                    AdminService adminService = new AdminService(storageService, authService);
 
-                    BookLibraryGui gui = new BookLibraryGui(extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, authService, storageService);
+                    BookLibraryGui gui = new BookLibraryGui(extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, authService, storageService, adminService);
                     
                     gui.setVisible(true);
                     LOGGER.info("GUI is visible.");
