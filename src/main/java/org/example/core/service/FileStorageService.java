@@ -3,6 +3,7 @@ package org.example.core.service;
 import org.example.core.entity.Book;
 import org.example.core.entity.StoredBook;
 import org.example.core.repository.BookRepository;
+import org.example.core.usecase.port.MetadataGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -16,10 +17,12 @@ public class FileStorageService {
     public static final long MAX_QUOTA = 5 * 1024 * 1024 * 1024L; // 5 GB
     private final BookRepository bookRepository;
     private final AuthService authService;
+    private final MetadataGateway metadataGateway;
 
-    public FileStorageService(BookRepository bookRepository, AuthService authService) {
+    public FileStorageService(BookRepository bookRepository, AuthService authService, MetadataGateway metadataGateway) {
         this.bookRepository = bookRepository;
         this.authService = authService;
+        this.metadataGateway = metadataGateway;
     }
 
     public void uploadBook(Integer userId, Path sourceFile, String title) throws IOException {
@@ -139,5 +142,13 @@ public class FileStorageService {
 
     public void deleteBook(Integer bookId) {
         bookRepository.deleteById(bookId);
+    }
+
+    public String getPreview(Integer bookId) {
+        byte[] content = bookRepository.getBookContent(bookId);
+        if (content == null) {
+            return "Контент книги не найден.";
+        }
+        return metadataGateway.extractTextPreview(content, 5000); // Ограничим 5000 символов для превью
     }
 }

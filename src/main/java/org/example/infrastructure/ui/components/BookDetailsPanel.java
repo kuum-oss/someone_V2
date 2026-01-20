@@ -17,6 +17,7 @@ public class BookDetailsPanel extends JPanel {
     private final JButton descriptionButton;
     private final JButton youtubeButton;
     private final JButton buyButton;
+    private final JButton previewButton;
     private ResourceBundle messages;
     private Book currentBook;
 
@@ -58,6 +59,11 @@ public class BookDetailsPanel extends JPanel {
         buyButton.setVisible(false);
         buyButton.setBackground(new Color(46, 139, 87));
         buyButton.setForeground(Color.WHITE);
+
+        previewButton = new JButton(messages.getString("button.preview"));
+        previewButton.setVisible(false);
+        previewButton.setBackground(new Color(70, 130, 180));
+        previewButton.setForeground(Color.WHITE);
         try {
             java.net.URL iconUrl = getClass().getResource("/icons/youtube.png");
             if (iconUrl != null) {
@@ -74,8 +80,9 @@ public class BookDetailsPanel extends JPanel {
         photos.add(coverLabel);
         photos.add(authorPhotoLabel);
 
-        JPanel buttonPanel = new JPanel(new GridLayout(4, 1, 0, 5));
+        JPanel buttonPanel = new JPanel(new GridLayout(5, 1, 0, 5));
         buttonPanel.add(buyButton);
+        buttonPanel.add(previewButton);
         buttonPanel.add(copyButton);
         buttonPanel.add(descriptionButton);
         buttonPanel.add(youtubeButton);
@@ -195,6 +202,17 @@ public class BookDetailsPanel extends JPanel {
         buyButton.setVisible(visible);
     }
 
+    public void setPreviewButtonVisible(boolean visible) {
+        previewButton.setVisible(visible);
+    }
+
+    public void setPreviewAction(java.awt.event.ActionListener action) {
+        for (java.awt.event.ActionListener al : previewButton.getActionListeners()) {
+            previewButton.removeActionListener(al);
+        }
+        previewButton.addActionListener(action);
+    }
+
     public void setMessages(ResourceBundle messages) {
         this.messages = messages;
         updateBorder();
@@ -203,6 +221,7 @@ public class BookDetailsPanel extends JPanel {
         descriptionButton.setText(messages.getString("button.description"));
         youtubeButton.setText(messages.getString("button.youtube"));
         buyButton.setText(messages.getString("button.buy"));
+        previewButton.setText(messages.getString("button.preview"));
         if (currentBook != null) {
             updateDetails(currentBook);
         }

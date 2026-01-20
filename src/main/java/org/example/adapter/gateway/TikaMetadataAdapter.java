@@ -9,6 +9,7 @@ import org.example.core.usecase.port.MetadataGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,5 +51,21 @@ public class TikaMetadataAdapter implements MetadataGateway {
             LOGGER.warn("Failed to extract cover from {}", path);
         }
         return null;
+    }
+
+    @Override
+    public String extractTextPreview(byte[] content, int maxChars) {
+        if (content == null) return "";
+        BodyContentHandler handler = new BodyContentHandler(maxChars);
+        try (InputStream in = new ByteArrayInputStream(content)) {
+            Metadata metadata = new Metadata();
+            parser.parse(in, handler, metadata, new ParseContext());
+        } catch (org.apache.tika.exception.WriteLimitReachedException e) {
+            // Это ожидаемо, так как мы ограничили количество символов
+        } catch (Exception e) {
+            LOGGER.error("Error extracting text preview", e);
+            return "Ошибка при извлечении превью: " + e.getMessage();
+        }
+        return handler.toString();
     }
 }

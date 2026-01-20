@@ -14,6 +14,7 @@ import org.example.core.service.AdminService;
 import org.example.core.service.AuthService;
 import org.example.core.service.FileStorageService;
 import org.example.infrastructure.ui.dialogs.AuthDialog;
+import org.example.infrastructure.ui.dialogs.BookPreviewDialog;
 import org.example.infrastructure.ui.dialogs.LibraryDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -277,12 +278,23 @@ public class BookLibraryGui extends JFrame {
                 buyBook(book);
             }
         });
+        detailsPanel.setPreviewAction(e -> {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+            if (node != null && node.getUserObject() instanceof Book book) {
+                if (book.getDatabaseId() != null) {
+                    String preview = storageService.getPreview(book.getDatabaseId());
+                    BookPreviewDialog dialog = new BookPreviewDialog(this, messages.getString("dialog.preview.title") + ": " + book.getTitle(), preview, messages);
+                    dialog.setVisible(true);
+                }
+            }
+        });
         add(detailsPanel, BorderLayout.EAST);
 
         tree.addTreeSelectionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null && node.getUserObject() instanceof Book book) {
                 detailsPanel.updateDetails(book);
+                detailsPanel.setPreviewButtonVisible(viewMode == ViewMode.SHOP || (book.getDatabaseId() != null));
                 headerBookInfoButton.setText(book.getTitle() + " - " + book.getAuthor());
                 headerBookInfoButton.setVisible(true);
             } else {

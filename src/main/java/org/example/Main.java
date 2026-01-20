@@ -59,7 +59,7 @@ public class Main {
                     GroupBooksUseCaseImpl groupBooksUseCase = new GroupBooksUseCaseImpl();
                     
                     AuthService authService = new AuthService(new JdbcUserRepository());
-                    FileStorageService storageService = new FileStorageService(new JdbcBookRepository(), authService);
+                    FileStorageService storageService = new FileStorageService(new JdbcBookRepository(), authService, metadataAdapter);
                     AdminService adminService = new AdminService(storageService, authService);
 
                     BookLibraryGui gui = new BookLibraryGui(extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, authService, storageService, adminService);
