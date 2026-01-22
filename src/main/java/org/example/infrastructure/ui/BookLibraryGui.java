@@ -142,7 +142,7 @@ public class BookLibraryGui extends JFrame {
         if (shopButton != null) shopButton.setEnabled(authenticated);
         if (libraryButton != null) libraryButton.setEnabled(authenticated && viewMode == ViewMode.SHOP);
         if (shopButton != null) shopButton.setEnabled(authenticated && viewMode == ViewMode.LIBRARY);
-        
+
         if (uploadToShopItem != null) {
             uploadToShopItem.setVisible(authenticated && authService.getCurrentUser().isAdmin());
         }
@@ -400,7 +400,7 @@ public class BookLibraryGui extends JFrame {
         searchField = new JTextField();
         searchField.putClientProperty("JTextField.placeholderText", messages.getString("search.placeholder"));
         searchField.addActionListener(e -> filterBooks(searchField.getText()));
-        
+
         searchButton = new JButton(messages.getString("button.search"));
         searchButton.addActionListener(e -> filterBooks(searchField.getText()));
 
@@ -452,7 +452,7 @@ public class BookLibraryGui extends JFrame {
             }
         });
         libraryMenu.add(myLibraryItem);
-        
+
         uploadAllItem = new JMenuItem("Загрузить все книги на сервер");
         uploadAllItem.addActionListener(e -> uploadAllBooksToServer());
         libraryMenu.add(uploadAllItem);
@@ -523,7 +523,7 @@ public class BookLibraryGui extends JFrame {
         stats.addActionListener(e -> showStatistics());
         JMenuItem dups = new JMenuItem(messages.getString("menu.duplicates"));
         dups.addActionListener(e -> findDuplicates());
-        
+
         tools.add(stats);
         tools.add(dups);
 
@@ -623,7 +623,7 @@ public class BookLibraryGui extends JFrame {
             searchField.putClientProperty("JTextField.placeholderText", messages.getString("search.placeholder"));
         }
         initMenuBar(); // Re-initialize menu bar to update labels
-        
+
         // Update groupModeCombo items
         DefaultComboBoxModel<String> model = new DefaultComboBoxModel<>(new String[]{
                 messages.getString("filter.genre"),
@@ -658,8 +658,8 @@ public class BookLibraryGui extends JFrame {
             // If no file path, try to show preview (likely a shop book)
             if (book.getDatabaseId() != null) {
                 String preview = storageService.getPreview(book.getDatabaseId());
-                BookPreviewDialog dialog = new BookPreviewDialog(this, 
-                    messages.getString("dialog.preview.title") + ": " + book.getTitle(), 
+                BookPreviewDialog dialog = new BookPreviewDialog(this,
+                    messages.getString("dialog.preview.title") + ": " + book.getTitle(),
                     preview, messages);
                 dialog.setVisible(true);
             } else {
@@ -676,7 +676,7 @@ public class BookLibraryGui extends JFrame {
                 Desktop.getDesktop().open(book.getFilePath().toFile());
             } else {
                 copyToClipboard(book.getFilePath().toString());
-                JOptionPane.showMessageDialog(this, 
+                JOptionPane.showMessageDialog(this,
                     "Desktop is not supported. File path copied to clipboard.",
                     "Info", JOptionPane.INFORMATION_MESSAGE);
             }
@@ -728,14 +728,14 @@ public class BookLibraryGui extends JFrame {
         cancelButton.setEnabled(true);
         startTime = System.currentTimeMillis();
         statusLabel.setText(messages.getString("status.preparing"));
-        
+
         int approxTotal = estimateFileCount(files);
         progressBar.setIndeterminate(approxTotal == 0);
         progressBar.setMaximum(approxTotal > 0 ? approxTotal : 100);
         progressBar.setValue(0);
         progressBar.setVisible(true);
 
-        LibraryScanner scanner = new LibraryScanner(files, extractMetadataUseCase, 
+        LibraryScanner scanner = new LibraryScanner(files, extractMetadataUseCase,
             books -> {
                 currentBooks.addAll(books);
                 updateTree(currentBooks);
@@ -811,7 +811,7 @@ public class BookLibraryGui extends JFrame {
         } else {
             defaultDir = Paths.get(System.getProperty("user.home"), "Desktop", "collection");
         }
-        
+
         try { java.nio.file.Files.createDirectories(defaultDir); } catch (IOException ignored) {}
 
         chooser.setSelectedFile(defaultDir.toFile());
@@ -819,7 +819,7 @@ public class BookLibraryGui extends JFrame {
 
         Path targetDir = chooser.getSelectedFile().toPath();
         prefs.put("lastExportDir", targetDir.toString());
-        
+
         cancelButton.setEnabled(true);
         organizeButton.setEnabled(false);
 
@@ -900,16 +900,40 @@ public class BookLibraryGui extends JFrame {
     private class BookTreeCellRenderer extends DefaultTreeCellRenderer {
         private final Map<Book, ImageIcon> coverCache = new WeakHashMap<>();
 
+        // Панель-контейнер: Центр = Иконка+Текст, Восток = Бейдж формата
+        private final JPanel panel = new JPanel(new BorderLayout(5, 0));
+        // Наш новый красивый бейдж
+        private final FormatBadge formatBadge = new FormatBadge();
+
+        public BookTreeCellRenderer() {
+            // Делаем панель прозрачной по умолчанию, чтобы видеть фон дерева
+            panel.setOpaque(false);
+
+            // 'this' - это сам DefaultTreeCellRenderer (иконка + название)
+            // Кладем его в центр
+            panel.add(this, BorderLayout.CENTER);
+
+            // Кладем бейдж справа
+            panel.add(formatBadge, BorderLayout.EAST);
+        }
+
         @Override
         public Component getTreeCellRendererComponent(JTree tree, Object value,
                                                       boolean sel, boolean exp, boolean leaf, int row, boolean focus) {
 
+            // 1. Настраиваем стандартную часть (текст, иконка, фокус)
             super.getTreeCellRendererComponent(tree, value, sel, exp, leaf, row, focus);
 
+            // 2. Сбрасываем бейдж (скрываем, если это не книга)
+            formatBadge.setVisible(false);
+
+            // 3. Заполняем данными
             if (value instanceof DefaultMutableTreeNode node) {
                 Object userObject = node.getUserObject();
                 if (userObject instanceof Book book) {
                     setText(book.getTitle());
+
+                    // --- Логика обложки (как была у тебя) ---
                     ImageIcon icon = null;
                     if (book.getCover() != null && book.getCover().length > 0) {
                         icon = coverCache.computeIfAbsent(book, b -> {
@@ -923,17 +947,89 @@ public class BookLibraryGui extends JFrame {
                             return null;
                         });
                     }
-                    
                     if (icon == null) {
                         icon = genreImageService.getDefaultBookIcon();
                     }
                     setIcon(icon);
+                    // -----------------------------------------
+
+                    // --- НОВАЯ ЛОГИКА: ФОРМАТ ---
+                    String fmt = book.getFormat();
+                    if (fmt != null && !fmt.isBlank()) {
+                        formatBadge.setFormat(fmt);
+                        formatBadge.setVisible(true);
+                    }
+
                 } else if (userObject instanceof String groupName) {
                     setText(groupName);
                     setIcon(genreImageService.getGenreIcon(groupName));
                 }
             }
-            return this;
+
+            // 4. Коррекция фона при выделении (Selection)
+            // Чтобы вся полоска (включая пустое место до бейджа) подсвечивалась синим
+            if (sel) {
+                panel.setBackground(getBackgroundSelectionColor());
+                panel.setOpaque(true);
+            } else {
+                panel.setBackground(getBackgroundNonSelectionColor());
+                panel.setOpaque(false);
+            }
+
+            return panel;
+        }
+    }
+
+    /**
+     * Вспомогательный класс для отрисовки цветного тега (бейджа)
+     */
+    private static class FormatBadge extends JLabel {
+        private static final int ARC = 10; // Радиус скругления углов
+        private Color badgeColor = Color.GRAY;
+
+        public FormatBadge() {
+            setOpaque(false); // Фон рисуем сами в paintComponent
+            setForeground(Color.WHITE); // Белый текст
+            setHorizontalAlignment(CENTER);
+            // Шрифт чуть меньше основного и жирный
+            setFont(UIManager.getFont("Label.font").deriveFont(Font.BOLD, 10f));
+            // Внутренние отступы: Сверху, Слева, Снизу, Справа
+            setBorder(BorderFactory.createEmptyBorder(2, 8, 2, 8));
+        }
+
+        public void setFormat(String format) {
+            String text = format.toUpperCase();
+            setText(text);
+            this.badgeColor = getFormatColor(text);
+        }
+
+        private Color getFormatColor(String format) {
+            // Подбираем цвет под формат
+            return switch (format) {
+                case "PDF" -> new Color(220, 53, 69);   // Красный
+                case "EPUB" -> new Color(40, 167, 69);  // Зеленый
+                case "FB2" -> new Color(0, 123, 255);   // Синий
+                case "MOBI" -> new Color(253, 126, 20); // Оранжевый
+                case "TXT" -> new Color(108, 117, 125); // Серый
+                case "DJVU" -> new Color(23, 162, 184); // Бирюзовый
+                default -> new Color(119, 119, 119);    // Нейтральный
+            };
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            Graphics2D g2 = (Graphics2D) g.create();
+            // Включаем сглаживание, чтобы углы были мягкими
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Рисуем цветную подложку
+            g2.setColor(badgeColor);
+            g2.fillRoundRect(0, 0, getWidth() - 1, getHeight() - 1, ARC, ARC);
+
+            g2.dispose();
+
+            // Рисуем текст поверх подложки
+            super.paintComponent(g);
         }
     }
 
@@ -974,7 +1070,7 @@ public class BookLibraryGui extends JFrame {
         int choice = JOptionPane.showConfirmDialog(this,
                 "Вы уверены, что хотите загрузить все книги (" + currentBooks.size() + ") на сервер?",
                 "Подтверждение", JOptionPane.YES_NO_OPTION);
-        
+
         if (choice != JOptionPane.YES_OPTION) return;
 
         progressBar.setVisible(true);
@@ -1020,7 +1116,7 @@ public class BookLibraryGui extends JFrame {
                 uploadAllItem.setEnabled(true);
                 uploadAllContextItem.setEnabled(true);
                 statusLabel.setText("Загрузка завершена. Успешно: " + successCount + ", Ошибок: " + failCount);
-                
+
                 String message = "Загрузка завершена!\nУспешно: " + successCount;
                 if (failCount > 0) {
                     message += "\nОшибок: " + failCount + "\nПоследняя ошибка: " + lastError;
@@ -1118,7 +1214,7 @@ public class BookLibraryGui extends JFrame {
 
     private void uploadToShop(Book book) {
         if (!adminService.isAdmin()) return;
-        
+
         try {
             adminService.uploadToShop(book);
             JOptionPane.showMessageDialog(this, "Книга успешно загружена в магазин!");

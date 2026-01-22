@@ -146,7 +146,7 @@ public class BookDetailsPanel extends JPanel {
     private void updateButtons(Book book) {
         copyButton.setVisible(book != null);
         descriptionButton.setVisible(book != null && book.getDescription() != null && !book.getDescription().isBlank());
-        
+
         boolean hasTitleAndAuthor = book != null && book.getTitle() != null && !book.getTitle().equalsIgnoreCase("Unknown Title") &&
                 book.getAuthor() != null && !book.getAuthor().equalsIgnoreCase("Unknown Author");
         youtubeButton.setVisible(hasTitleAndAuthor);
@@ -174,7 +174,7 @@ public class BookDetailsPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(textArea);
         scrollPane.setPreferredSize(new Dimension(400, 300));
 
-        JOptionPane.showMessageDialog(this, scrollPane, 
+        JOptionPane.showMessageDialog(this, scrollPane,
                 messages.getString("dialog.description.title"), JOptionPane.INFORMATION_MESSAGE);
     }
 
@@ -185,8 +185,8 @@ public class BookDetailsPanel extends JPanel {
             String url = "https://www.youtube.com/results?search_query=" + java.net.URLEncoder.encode(query, java.nio.charset.StandardCharsets.UTF_8);
             Desktop.getDesktop().browse(new java.net.URI(url));
         } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, 
-                    messages.getString("error.open_file") + ": " + e.getMessage(), 
+            JOptionPane.showMessageDialog(this,
+                    messages.getString("error.open_file") + ": " + e.getMessage(),
                     messages.getString("error.title"), JOptionPane.ERROR_MESSAGE);
         }
     }

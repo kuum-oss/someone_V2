@@ -1,5 +1,8 @@
 package org.example.core.entity;
 
+/**
+ * Сущность для хранения данных о книге в базе данных.
+ */
 public class StoredBook {
     private Integer id;
     private Integer userId;
@@ -19,6 +22,7 @@ public class StoredBook {
     private String description;
     private byte[] cover;
     private byte[] authorPhoto;
+    private String format; // <--- ДОБАВЛЕНО: Поле для формата (PDF, EPUB и т.д.)
 
     public StoredBook(Integer id, Integer userId, String title, String filePath, String originalName, long fileSize) {
         this(id, userId, title, filePath, originalName, fileSize, null, false);
@@ -61,6 +65,7 @@ public class StoredBook {
         private String description;
         private byte[] cover;
         private byte[] authorPhoto;
+        private String format; // <--- ДОБАВЛЕНО
 
         public Builder id(Integer id) { this.id = id; return this; }
         public Builder userId(Integer userId) { this.userId = userId; return this; }
@@ -80,6 +85,12 @@ public class StoredBook {
         public Builder cover(byte[] cover) { this.cover = cover; return this; }
         public Builder authorPhoto(byte[] authorPhoto) { this.authorPhoto = authorPhoto; return this; }
 
+        // Метод для установки формата
+        public Builder format(String format) {
+            this.format = format;
+            return this;
+        }
+
         public StoredBook build() {
             StoredBook sb = new StoredBook(id, userId, title, filePath, originalName, fileSize, fileContent, isPublic);
             sb.author = author;
@@ -91,10 +102,12 @@ public class StoredBook {
             sb.description = description;
             sb.cover = cover;
             sb.authorPhoto = authorPhoto;
+            sb.format = format; // <--- ДОБАВЛЕНО: Присвоение формата при сборке
             return sb;
         }
     }
 
+    // Геттеры
     public Integer getId() { return id; }
     public Integer getUserId() { return userId; }
     public String getTitle() { return title; }
@@ -112,4 +125,7 @@ public class StoredBook {
     public String getDescription() { return description; }
     public byte[] getCover() { return cover; }
     public byte[] getAuthorPhoto() { return authorPhoto; }
+
+    // Геттер для формата
+    public String getFormat() { return format; }
 }
