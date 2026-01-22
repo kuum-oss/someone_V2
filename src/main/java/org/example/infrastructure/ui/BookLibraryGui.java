@@ -654,6 +654,23 @@ public class BookLibraryGui extends JFrame {
     }
 
     private void openBook(Book book) {
+        if (book.getFilePath() == null) {
+            // If no file path, try to show preview (likely a shop book)
+            if (book.getDatabaseId() != null) {
+                String preview = storageService.getPreview(book.getDatabaseId());
+                BookPreviewDialog dialog = new BookPreviewDialog(this, 
+                    messages.getString("dialog.preview.title") + ": " + book.getTitle(), 
+                    preview, messages);
+                dialog.setVisible(true);
+            } else {
+                JOptionPane.showMessageDialog(this,
+                    messages.getString("error.no_file_path"),
+                    messages.getString("error.title"),
+                    JOptionPane.WARNING_MESSAGE);
+            }
+            return;
+        }
+
         try {
             if (Desktop.isDesktopSupported()) {
                 Desktop.getDesktop().open(book.getFilePath().toFile());
