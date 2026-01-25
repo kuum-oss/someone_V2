@@ -21,6 +21,7 @@ public class BookDetailsPanel extends JPanel {
     private ResourceBundle messages;
     private Book currentBook;
 
+
     public BookDetailsPanel(ResourceBundle messages) {
         this.messages = messages;
         setLayout(new BorderLayout());
@@ -190,7 +191,10 @@ public class BookDetailsPanel extends JPanel {
                     messages.getString("error.title"), JOptionPane.ERROR_MESSAGE);
         }
     }
-
+    private void updateBorder() {
+        setBorder(BorderFactory.createTitledBorder(messages.getString("panel.details")));
+    }
+  //Cетерры
     public void setBuyAction(java.awt.event.ActionListener action) {
         for (java.awt.event.ActionListener al : buyButton.getActionListeners()) {
             buyButton.removeActionListener(al);
@@ -227,7 +231,5 @@ public class BookDetailsPanel extends JPanel {
         }
     }
 
-    private void updateBorder() {
-        setBorder(BorderFactory.createTitledBorder(messages.getString("panel.details")));
-    }
+
 }

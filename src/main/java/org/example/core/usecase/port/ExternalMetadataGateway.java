@@ -1,4 +1,5 @@
 package org.example.core.usecase.port;
+// Порт для получения внешних метаданных книги из сторонних источников
 
 import java.util.Optional;
 

@@ -11,18 +11,20 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private User currentUser;
-
+    // Сервис аутентификации и управления текущим пользователем
     public AuthService(UserRepository userRepository) {
         this.userRepository = userRepository;
-        this.passwordEncoder = new BCryptPasswordEncoder();
+        this.passwordEncoder = new BCryptPasswordEncoder(); // Кодировщик паролей (BCrypt)
     }
 
     public boolean register(String email, String password, boolean isAdmin) {
         if (userRepository.findByEmail(email).isPresent()) {
             return false;
         }
-        String encodedPassword = passwordEncoder.encode(password);
+        String encodedPassword = passwordEncoder.encode(password); // Хэшируем пароль перед сохранением
         userRepository.save(new User(null, email, encodedPassword, isAdmin, 5));
+        // Создаём и сохраняем нового пользователя
+        // points = 5 — стартовые очки
         return true;
     }
 

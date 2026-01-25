@@ -286,8 +286,11 @@ public class BookLibraryGui extends JFrame {
                     BookPreviewDialog dialog = new BookPreviewDialog(this, messages.getString("dialog.preview.title") + ": " + book.getTitle(), preview, messages);
                     dialog.setVisible(true);
                 }
+
             }
+
         });
+
         add(detailsPanel, BorderLayout.EAST);
 
         tree.addTreeSelectionListener(e -> {

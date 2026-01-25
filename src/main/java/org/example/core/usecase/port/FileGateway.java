@@ -1,4 +1,5 @@
 package org.example.core.usecase.port;
+// Порт для работы с файловой системой (размеры, копирование, каталоги)
 
 import org.example.core.entity.Book;
 import java.io.IOException;

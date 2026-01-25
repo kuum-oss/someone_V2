@@ -1,6 +1,7 @@
 package org.example.core.util;
 
 import java.nio.file.Path;
+// Вспомогательный класс для определения поддерживаемых файлов электронных книг
 
 public class BookFileUtils {
     public static boolean isBookFile(Path path) {

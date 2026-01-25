@@ -64,4 +64,5 @@ class ExtractMetadataUseCaseTest {
 
         assertEquals("Fantasy", book.getGenre());
     }
+    
 }

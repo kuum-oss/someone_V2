@@ -78,7 +78,7 @@ public class Main {
 
     private static boolean isSystemDarkMode() {
         // FlatLaf 3.x+ умеет определять темную тему на macOS
-        return com.formdev.flatlaf.util.SystemInfo.isMacOS && 
+        return com.formdev.flatlaf.util.SystemInfo.isMacOS &&
                com.formdev.flatlaf.FlatLaf.isLafDark();
     }
 }
