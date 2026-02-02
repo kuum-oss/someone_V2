@@ -123,7 +123,12 @@ public class GenreImageService {
         try {
             URL url = getClass().getResource("/icons/" + iconName);
             if (url != null) {
-                return scale(new ImageIcon(url), 24, 24);
+                ImageIcon icon = new ImageIcon(url);
+                if (icon.getImage() != null) {
+                    return scale(icon, 24, 24);
+                }
+            } else {
+                LOGGER.warn("Icon not found: /icons/{}", iconName);
             }
         } catch (Exception e) {
             LOGGER.error("Resource icon error: {}", iconName, e);
@@ -133,14 +138,18 @@ public class GenreImageService {
 
     private ImageIcon downloadIcon(String url) {
         try {
-            return scale(new ImageIcon(new URL(url)), 24, 24);
-        } catch (Exception ignored) {
-            return null;
+            ImageIcon icon = new ImageIcon(new URL(url));
+            if (icon.getImage() != null) {
+                return scale(icon, 24, 24);
+            }
+        } catch (Exception e) {
+            LOGGER.warn("Failed to download icon from {}: {}", url, e.getMessage());
         }
+        return null;
     }
 
     private ImageIcon scale(ImageIcon icon, int w, int h) {
-        if (icon.getIconWidth() > 0) {
+        if (icon != null && icon.getImage() != null && icon.getIconWidth() > 0) {
             return new ImageIcon(icon.getImage().getScaledInstance(w, h, Image.SCALE_SMOOTH));
         }
         return null;

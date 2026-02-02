@@ -52,22 +52,29 @@ public class FileStorageService {
     }
 
     public void uploadBook(Integer userId, Book book, boolean isPublic) throws IOException {
-        Path sourceFile = book.getFilePath();
-        if (sourceFile == null || !Files.exists(sourceFile)) {
-            throw new IOException("Source file does not exist or path is null");
-        }
+        StoredBook.BookType type = book.getFormat().equals("PHYSICAL") ? StoredBook.BookType.PHYSICAL : StoredBook.BookType.ELECTRONIC;
         
-        long fileSize = Files.size(sourceFile);
-        if (!isPublic) {
-            long currentTotal = bookRepository.getTotalSizeByUserId(userId);
-            if (currentTotal + fileSize > MAX_QUOTA) {
-                throw new IOException("Storage quota exceeded. You can't upload more than 5 GB.");
-            }
-        }
+        long fileSize = 0;
+        byte[] content = null;
+        String fileName = "PHYSICAL";
+        String filePath = null;
 
-        byte[] content = Files.readAllBytes(sourceFile);
-        String fileName = sourceFile.getFileName().toString();
-        String filePath = isPublic ? null : sourceFile.toAbsolutePath().toString();
+        if (type == StoredBook.BookType.ELECTRONIC) {
+            Path sourceFile = book.getFilePath();
+            if (sourceFile == null || !Files.exists(sourceFile)) {
+                throw new IOException("Source file does not exist or path is null");
+            }
+            fileSize = Files.size(sourceFile);
+            if (!isPublic) {
+                long currentTotal = bookRepository.getTotalSizeByUserId(userId);
+                if (currentTotal + fileSize > MAX_QUOTA) {
+                    throw new IOException("Storage quota exceeded. You can't upload more than 5 GB.");
+                }
+            }
+            content = Files.readAllBytes(sourceFile);
+            fileName = sourceFile.getFileName().toString();
+            filePath = isPublic ? null : sourceFile.toAbsolutePath().toString();
+        }
 
         StoredBook sb = StoredBook.builder()
                 .userId(userId)
@@ -86,14 +93,17 @@ public class FileStorageService {
                 .fileSize(fileSize)
                 .fileContent(content)
                 .isPublic(isPublic)
+                .bookType(type)
+                .format(book.getFormat())
                 .build();
         
         bookRepository.save(sb);
-        if (!isPublic) {
+        if (!isPublic && type == StoredBook.BookType.ELECTRONIC) {
             int currentPoints = authService.getCurrentUser().getPoints();
             authService.updateCurrentUserPoints(currentPoints + 1);
         }
-        LOGGER.info("Book '{}' with metadata uploaded to database (public={}) for user {}", book.getTitle(), isPublic, userId);
+        LOGGER.info("Book '{}' (type={}) with metadata uploaded to database (public={}) for user {}", 
+                book.getTitle(), type, isPublic, userId);
     }
 
     public List<StoredBook> getUserBooks(Integer userId) {

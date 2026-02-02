@@ -49,6 +49,7 @@ public class Main {
             
             SwingUtilities.invokeLater(() -> {
                 try {
+                    LOGGER.info("Initializing controllers and services...");
                     TikaMetadataAdapter metadataAdapter = new TikaMetadataAdapter();
                     NioFileAdapter fileAdapter = new NioFileAdapter();
                     ThumbnailCacheService cacheService = new ThumbnailCacheService();
@@ -58,11 +59,24 @@ public class Main {
                     OrganizeBooksUseCaseImpl organizeBooksUseCase = new OrganizeBooksUseCaseImpl(fileAdapter);
                     GroupBooksUseCaseImpl groupBooksUseCase = new GroupBooksUseCaseImpl();
                     
-                    AuthService authService = new AuthService(new JdbcUserRepository());
-                    FileStorageService storageService = new FileStorageService(new JdbcBookRepository(), authService, metadataAdapter);
-                    AdminService adminService = new AdminService(storageService, authService);
+                    JdbcUserRepository userRepository = new JdbcUserRepository();
+                    JdbcBookRepository bookRepository = new JdbcBookRepository();
+                    org.example.infrastructure.repository.JdbcOrderRepository orderRepository = new org.example.infrastructure.repository.JdbcOrderRepository();
+                    org.example.infrastructure.repository.JdbcNotificationRepository notificationRepository = new org.example.infrastructure.repository.JdbcNotificationRepository();
 
-                    BookLibraryGui gui = new BookLibraryGui(extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, authService, storageService, adminService);
+                    AuthService authService = new AuthService(userRepository);
+                    FileStorageService storageService = new FileStorageService(bookRepository, authService, metadataAdapter);
+                    org.example.core.service.AdminDashboardService dashboardService = new org.example.core.service.AdminDashboardService(bookRepository, notificationRepository);
+                    org.example.core.service.OrderService orderService = new org.example.core.service.OrderService(orderRepository, bookRepository, dashboardService);
+                    AdminService adminService = new AdminService(storageService, authService, userRepository, bookRepository);
+
+                    org.example.application.state.LibraryViewState state = new org.example.application.state.LibraryViewState();
+                    org.example.application.controller.AuthController authController = new org.example.application.controller.AuthController(authService, state);
+                    org.example.application.controller.BookLibraryController controller = new org.example.application.controller.BookLibraryController(
+                            extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, storageService, adminService, orderService, state);
+
+                    BookLibraryGui gui = new BookLibraryGui(controller, authController, state, dashboardService, orderService, groupBooksUseCase,
+                            storageService, adminService, authService);
                     
                     gui.setVisible(true);
                     LOGGER.info("GUI is visible.");

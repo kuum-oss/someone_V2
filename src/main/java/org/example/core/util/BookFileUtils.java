@@ -6,7 +6,9 @@ import java.nio.file.Path;
 public class BookFileUtils {
     public static boolean isBookFile(Path path) {
         if (path == null) return false;
-        String n = path.getFileName().toString().toLowerCase();
+        Path fileNamePath = path.getFileName();
+        if (fileNamePath == null) return false;
+        String n = fileNamePath.toString().toLowerCase();
         return n.endsWith(".pdf") || n.endsWith(".epub") || n.endsWith(".fb2") || n.endsWith(".mobi");
     }
     

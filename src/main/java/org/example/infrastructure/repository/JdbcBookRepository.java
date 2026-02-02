@@ -13,7 +13,7 @@ public class JdbcBookRepository implements BookRepository {
 
     @Override
     public StoredBook save(StoredBook book) {
-        String sql = "INSERT INTO books (user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, file_content, is_public) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO books (user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, file_content, is_public, book_type, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, book.getUserId());
@@ -40,6 +40,8 @@ public class JdbcBookRepository implements BookRepository {
             ps.setLong(14, book.getFileSize());
             ps.setBytes(15, book.getFileContent());
             ps.setBoolean(16, book.isPublic());
+            ps.setString(17, book.getBookType().name());
+            ps.setBoolean(18, book.isAvailable());
             ps.executeUpdate();
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -61,6 +63,8 @@ public class JdbcBookRepository implements BookRepository {
                             .originalName(book.getOriginalName())
                             .fileSize(book.getFileSize())
                             .isPublic(book.isPublic())
+                            .bookType(book.getBookType())
+                            .isAvailable(book.isAvailable())
                             .build();
                 }
             }
@@ -124,6 +128,8 @@ public class JdbcBookRepository implements BookRepository {
                 .fileSize(rs.getLong("file_size"))
                 .fileContent(includeContent ? rs.getBytes("file_content") : null)
                 .isPublic(rs.getBoolean("is_public"))
+                .bookType(StoredBook.BookType.valueOf(rs.getString("book_type")))
+                .isAvailable(rs.getBoolean("is_available"))
                 .build();
     }
 
@@ -194,5 +200,52 @@ public class JdbcBookRepository implements BookRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Error deleting book by id", e);
         }
+    }
+    @Override
+    public List<StoredBook> findByType(StoredBook.BookType type) {
+        List<StoredBook> books = new ArrayList<>();
+        String sql = "SELECT * FROM books WHERE book_type = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, type.name());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    books.add(mapResultSetToStoredBook(rs, false));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding books by type", e);
+        }
+        return books;
+    }
+
+    @Override
+    public long getTotalStorageSize() {
+        String sql = "SELECT SUM(file_size) FROM books";
+        try (Connection conn = DatabaseConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error getting total storage size", e);
+        }
+        return 0;
+    }
+
+    @Override
+    public long getTotalBookCount() {
+        String sql = "SELECT COUNT(*) FROM books";
+        try (Connection conn = DatabaseConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            if (rs.next()) {
+                return rs.getLong(1);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error getting total book count", e);
+        }
+        return 0;
     }
 }

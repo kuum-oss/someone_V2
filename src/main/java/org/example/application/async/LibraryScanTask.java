@@ -1,4 +1,4 @@
-package org.example.infrastructure.ui;
+package org.example.application.async;
 
 import org.example.core.entity.Book;
 import org.example.core.usecase.ExtractMetadataUseCase;
@@ -12,32 +12,23 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
 
-public class LibraryScanner extends SwingWorker<Void, Book> {
-    private static final Logger LOGGER = LoggerFactory.getLogger(LibraryScanner.class);
+public class LibraryScanTask extends SwingWorker<Void, Book> {
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibraryScanTask.class);
     private final List<File> files;
     private final ExtractMetadataUseCase extractMetadataUseCase;
     private final Consumer<List<Book>> onBooksFound;
     private final Consumer<Integer> onProgress;
     private final Runnable onDone;
-    private long startTime;
     private int processedCount = 0;
 
-    public LibraryScanner(List<File> files, ExtractMetadataUseCase extractMetadataUseCase, 
-                          Consumer<List<Book>> onBooksFound,
-                          Consumer<Integer> onProgress, Runnable onDone) {
+    public LibraryScanTask(List<File> files, ExtractMetadataUseCase extractMetadataUseCase,
+                           Consumer<List<Book>> onBooksFound,
+                           Consumer<Integer> onProgress, Runnable onDone) {
         this.files = files;
         this.extractMetadataUseCase = extractMetadataUseCase;
         this.onBooksFound = onBooksFound;
         this.onProgress = onProgress;
         this.onDone = onDone;
-    }
-
-    public void setStartTime(long startTime) {
-        this.startTime = startTime;
-    }
-
-    public long getStartTime() {
-        return startTime;
     }
 
     @Override
@@ -58,7 +49,7 @@ public class LibraryScanner extends SwingWorker<Void, Book> {
                 if (children != null) {
                     scan(Arrays.asList(children));
                 }
-            } else if (BookFileUtils.isBookFile(f.getName())) {
+            } else if (BookFileUtils.isBookFile(f.toPath())) {
                 try {
                     Book book = extractMetadataUseCase.execute(f.toPath());
                     publish(book);
@@ -68,7 +59,6 @@ public class LibraryScanner extends SwingWorker<Void, Book> {
             }
         }
     }
-
 
     @Override
     protected void process(List<Book> chunks) {

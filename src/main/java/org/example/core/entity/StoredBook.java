@@ -23,6 +23,12 @@ public class StoredBook {
     private byte[] cover;
     private byte[] authorPhoto;
     private String format; // <--- ДОБАВЛЕНО: Поле для формата (PDF, EPUB и т.д.)
+    private BookType bookType;
+    private boolean isAvailable;
+
+    public enum BookType {
+        ELECTRONIC, PHYSICAL
+    }
 
     public StoredBook(Integer id, Integer userId, String title, String filePath, String originalName, long fileSize) {
         this(id, userId, title, filePath, originalName, fileSize, null, false);
@@ -66,6 +72,8 @@ public class StoredBook {
         private byte[] cover;
         private byte[] authorPhoto;
         private String format; // <--- ДОБАВЛЕНО
+        private BookType bookType = BookType.ELECTRONIC;
+        private boolean isAvailable = true;
 
         public Builder id(Integer id) { this.id = id; return this; }
         public Builder userId(Integer userId) { this.userId = userId; return this; }
@@ -91,6 +99,9 @@ public class StoredBook {
             return this;
         }
 
+        public Builder bookType(BookType bookType) { this.bookType = bookType; return this; }
+        public Builder isAvailable(boolean isAvailable) { this.isAvailable = isAvailable; return this; }
+
         public StoredBook build() {
             StoredBook sb = new StoredBook(id, userId, title, filePath, originalName, fileSize, fileContent, isPublic);
             sb.author = author;
@@ -103,6 +114,8 @@ public class StoredBook {
             sb.cover = cover;
             sb.authorPhoto = authorPhoto;
             sb.format = format; // <--- ДОБАВЛЕНО: Присвоение формата при сборке
+            sb.bookType = bookType;
+            sb.isAvailable = isAvailable;
             return sb;
         }
     }
@@ -128,4 +141,8 @@ public class StoredBook {
 
     // Геттер для формата
     public String getFormat() { return format; }
+
+    public BookType getBookType() { return bookType; }
+    public boolean isAvailable() { return isAvailable; }
+    public void setAvailable(boolean available) { isAvailable = available; }
 }

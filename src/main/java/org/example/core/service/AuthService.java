@@ -29,6 +29,9 @@ public class AuthService {
     }
 
     public boolean login(String email, String password) {
+        if (userRepository.isBlacklisted(email)) {
+            throw new SecurityException("Ваш аккаунт заблоковано адміном.");
+        }
         Optional<User> userOpt = userRepository.findByEmail(email);
         if (userOpt.isPresent() && passwordEncoder.matches(password, userOpt.get().getPassword())) {
             this.currentUser = userOpt.get();

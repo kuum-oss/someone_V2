@@ -67,10 +67,40 @@ public class DatabaseInitializer {
                         "file_size BIGINT NOT NULL DEFAULT 0," +
                         "file_content LONGBLOB," +
                         "is_public BOOLEAN NOT NULL DEFAULT FALSE," +
+                        "book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'," +
+                        "is_available BOOLEAN NOT NULL DEFAULT TRUE," +
                         "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
                         ")"
                         ;
                 stmt.executeUpdate(createBooksTable);
+
+                String createBlacklistTable = "CREATE TABLE IF NOT EXISTS blacklist (" +
+                        "email VARCHAR(255) PRIMARY KEY," +
+                        "reason TEXT," +
+                        "banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                        ")";
+                stmt.executeUpdate(createBlacklistTable);
+
+                String createNotificationsTable = "CREATE TABLE IF NOT EXISTS notifications (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "user_id INT," +
+                        "message TEXT NOT NULL," +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                        "is_read BOOLEAN DEFAULT FALSE," +
+                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
+                        ")";
+                stmt.executeUpdate(createNotificationsTable);
+
+                String createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (" +
+                        "id INT AUTO_INCREMENT PRIMARY KEY," +
+                        "user_id INT NOT NULL," +
+                        "book_id INT NOT NULL," +
+                        "status ENUM('PENDING', 'SHIPPED', 'DELIVERED', 'CANCELLED') DEFAULT 'PENDING'," +
+                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE," +
+                        "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE" +
+                        ")";
+                stmt.executeUpdate(createOrdersTable);
 
                 // Пробуем добавить колонки, если таблица уже существует
                 String[] columnsToAdd = {
@@ -82,8 +112,9 @@ public class DatabaseInitializer {
                     "ALTER TABLE books ADD COLUMN language VARCHAR(50)",
                     "ALTER TABLE books ADD COLUMN description TEXT",
                     "ALTER TABLE books ADD COLUMN cover MEDIUMBLOB",
-                    "ALTER TABLE books ADD COLUMN author_photo MEDIUMBLOB"
-
+                    "ALTER TABLE books ADD COLUMN author_photo MEDIUMBLOB",
+                    "ALTER TABLE books ADD COLUMN book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'",
+                    "ALTER TABLE books ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE"
                 };
 
                 for (String sql : columnsToAdd) {

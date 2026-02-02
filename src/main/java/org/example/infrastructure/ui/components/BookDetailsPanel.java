@@ -217,6 +217,10 @@ public class BookDetailsPanel extends JPanel {
         previewButton.addActionListener(action);
     }
 
+    public void setBuyButtonText(String text) {
+        buyButton.setText(text);
+    }
+
     public void setMessages(ResourceBundle messages) {
         this.messages = messages;
         updateBorder();

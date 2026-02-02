@@ -89,4 +89,64 @@ public class JdbcUserRepository implements UserRepository {
             throw new RuntimeException("Error updating user points", e);
         }
     }
+    @Override
+    public void deleteById(Integer id) {
+        String sql = "DELETE FROM users WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, id);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error deleting user", e);
+        }
+    }
+
+    @Override
+    public void addToBlacklist(String email, String reason) {
+        String sql = "INSERT INTO blacklist (email, reason) VALUES (?, ?)";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            ps.setString(2, reason);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error adding to blacklist", e);
+        }
+    }
+
+    @Override
+    public boolean isBlacklisted(String email) {
+        String sql = "SELECT 1 FROM blacklist WHERE email = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, email);
+            try (ResultSet rs = ps.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error checking blacklist", e);
+        }
+    }
+
+    @Override
+    public java.util.List<User> findAll() {
+        java.util.List<User> users = new java.util.ArrayList<>();
+        String sql = "SELECT * FROM users";
+        try (Connection conn = DatabaseConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                users.add(new User(
+                        rs.getInt("id"),
+                        rs.getString("email"),
+                        rs.getString("password"),
+                        rs.getBoolean("is_admin"),
+                        rs.getInt("points")
+                ));
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding all users", e);
+        }
+        return users;
+    }
 }

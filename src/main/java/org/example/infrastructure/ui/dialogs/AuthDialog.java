@@ -4,17 +4,20 @@ import org.example.core.service.AuthService;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.ResourceBundle;
 
 public class AuthDialog extends JDialog {
     private final AuthService authService;
+    private final ResourceBundle messages;
     private JTextField emailField;
     private JPasswordField passwordField;
     private JCheckBox adminCheckBox;
     private boolean succeeded;
 
-    public AuthDialog(Frame parent, AuthService authService) {
-        super(parent, "Авторизация", true);
+    public AuthDialog(Frame parent, AuthService authService, ResourceBundle messages) {
+        super(parent, messages.getString("menu.login"), true);
         this.authService = authService;
+        this.messages = messages;
         initUI();
     }
 
@@ -28,31 +31,32 @@ public class AuthDialog extends JDialog {
         emailField = new JTextField(20);
         fieldsPanel.add(emailField);
 
-        fieldsPanel.add(new JLabel("Пароль:"));
+        fieldsPanel.add(new JLabel(messages.getString("details.password") != null ? messages.getString("details.password") : "Password:"));
         passwordField = new JPasswordField(20);
         fieldsPanel.add(passwordField);
 
-        fieldsPanel.add(new JLabel("Администратор:"));
+        fieldsPanel.add(new JLabel(messages.getString("admin.users.is_admin") + ":"));
         adminCheckBox = new JCheckBox();
         fieldsPanel.add(adminCheckBox);
 
         add(fieldsPanel, BorderLayout.CENTER);
 
         JPanel buttonsPanel = new JPanel();
-        JButton loginButton = new JButton("Войти");
-        JButton registerButton = new JButton("Регистрация");
+        JButton loginButton = new JButton(messages.getString("menu.login"));
+        JButton registerButton = new JButton(messages.getString("menu.register"));
 
         loginButton.addActionListener(e -> {
             String email = emailField.getText();
             String password = new String(passwordField.getPassword());
-            if (authService.login(email, password)) {
-                if (adminCheckBox.isSelected()) {
-                    authService.getCurrentUser().setAdmin(true);
+            try {
+                if (authService.login(email, password)) {
+                    succeeded = true;
+                    dispose();
+                } else {
+                    JOptionPane.showMessageDialog(this, messages.getString("error.invalid_login"), messages.getString("error.title"), JOptionPane.ERROR_MESSAGE);
                 }
-                succeeded = true;
-                dispose();
-            } else {
-                JOptionPane.showMessageDialog(this, "Неверный email или пароль", "Ошибка", JOptionPane.ERROR_MESSAGE);
+            } catch (SecurityException ex) {
+                JOptionPane.showMessageDialog(this, ex.getMessage(), messages.getString("error.access_denied"), JOptionPane.ERROR_MESSAGE);
             }
         });
 
@@ -60,13 +64,13 @@ public class AuthDialog extends JDialog {
             String email = emailField.getText();
             String password = new String(passwordField.getPassword());
             if (email.isEmpty() || password.isEmpty()) {
-                JOptionPane.showMessageDialog(this, "Заполните все поля", "Предупреждение", JOptionPane.WARNING_MESSAGE);
+                JOptionPane.showMessageDialog(this, messages.getString("dialog.add_book.error.fill_fields"), messages.getString("error.title"), JOptionPane.WARNING_MESSAGE);
                 return;
             }
             if (authService.register(email, password, adminCheckBox.isSelected())) {
-                JOptionPane.showMessageDialog(this, "Регистрация успешна! Теперь вы можете войти.");
+                JOptionPane.showMessageDialog(this, messages.getString("msg.register_success"));
             } else {
-                JOptionPane.showMessageDialog(this, "Пользователь с таким email уже существует", "Ошибка", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, messages.getString("error.user_exists"), messages.getString("error.title"), JOptionPane.ERROR_MESSAGE);
             }
         });
 
