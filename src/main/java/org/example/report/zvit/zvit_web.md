@@ -1,0 +1,68 @@
+# ТЕХНІЧНИЙ ЗВІТ: РОЗРОБКА ВЕБ-ІНТЕРФЕЙСУ ТА КОНТРОЛЕРІВ
+## Проект "Smart Organizer"
+
+### Загальна інформація
+**Тема:** Впровадження веб-шару системи за допомогою Javalin та FreeMarker.
+
+---
+
+### Опис етапу розробки
+**Мета:** Створення динамічного веб-додатка для віддаленого управління бібліотекою, реалізація маршрутизації та забезпечення безпеки HTTP-з'єднань.
+**Виконані завдання:**
+1. Налаштування веб-сервера на базі фреймворку Javalin.
+2. Розробка архітектури контролерів (Request Handlers).
+3. Інтеграція шаблонізатора FreeMarker для генерації динамічного HTML.
+4. Впровадження заходів безпеки: Rate Limiting, CSRF Protection та Security Headers.
+
+---
+
+### Архітектура веб-шару
+Веб-інтерфейс проекту побудований за паттерном MVC:
+- **Model:** Дані, що витягуються з репозиторіїв та передаються в шаблони.
+- **View:** Шаблони `.ftl`, що описують структуру сторінок (Library, Shop, Admin).
+- **Controller:** Клас `WebServer`, який обробляє вхідні запити, взаємодіє з сервісами та повертає результат.
+
+---
+
+### Реалізація (Фрагмент WebServer.java)
+```java
+package org.example.infrastructure.web;
+
+import io.javalin.Javalin;
+import io.javalin.http.Context;
+import java.util.Map;
+
+/**
+ * Конфігурує маршрути та обробляє HTTP-запити.
+ */
+public class WebServer {
+    private Javalin app;
+
+    private void setupRoutes() {
+        // Маршрут головної сторінки бібліотеки
+        app.get("/", ctx -> {
+            Map<String, Object> model = createModel(ctx);
+            List<StoredBook> books = bookRepository.findPublicBooks();
+            model.put("books", books);
+            render(ctx, "templates/library.ftl", model);
+        });
+
+        // Маршрут для скачування файлів з перевіркою прав
+        app.get("/book/{id}/download", ctx -> {
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            byte[] content = bookRepository.getBookContent(id);
+            ctx.contentType("application/octet-stream")
+               .header("Content-Disposition", "attachment; filename=\"book.pdf\"")
+               .result(content);
+        });
+    }
+}
+```
+
+---
+
+### Аналіз та висновки
+Впровадження веб-інтерфейсу значно розширило можливості використання системи.
+- **Кросплатформеність:** Користувачі можуть отримати доступ до своїх книг з будь-якого пристрою через браузер.
+- **Безпека:** Реалізовані механізми захисту від типових веб-загроз забезпечують цілісність даних та стабільність сервера.
+- **Продуктивність:** Використання Javalin дозволяє серверу залишатися легким та швидким навіть при великій кількості одночасних з'єднань.
