@@ -29,10 +29,10 @@ public class DatabaseConfig {
     }
 
     private static void setupDataSource() {
-        String baseUrl = properties.getProperty("db.url");
-        String dbName = properties.getProperty("db.name");
-        String user = properties.getProperty("db.user");
-        String pass = properties.getProperty("db.password");
+        String baseUrl = System.getenv("DB_URL") != null ? System.getenv("DB_URL") : properties.getProperty("db.url");
+        String dbName = System.getenv("DB_NAME") != null ? System.getenv("DB_NAME") : properties.getProperty("db.name");
+        String user = System.getenv("DB_USER") != null ? System.getenv("DB_USER") : properties.getProperty("db.user");
+        String pass = System.getenv("DB_PASSWORD") != null ? System.getenv("DB_PASSWORD") : properties.getProperty("db.password");
 
         dataSource = new BasicDataSource();
         dataSource.setUrl(baseUrl + dbName);

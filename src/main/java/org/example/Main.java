@@ -18,6 +18,7 @@ import org.example.core.service.AdminService;
 import org.example.core.service.AuthService;
 import org.example.core.service.FileStorageService;
 import org.example.infrastructure.ui.dialogs.AuthDialog;
+import org.example.infrastructure.web.WebServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,24 +33,87 @@ public class Main {
             
             // Инициализация БД
             DatabaseInitializer.initialize();
-            
-            // Подавляем предупреждения о Log4j2 и нативном доступе
-            System.setProperty("log4j2.disable.jmx", "true");
-            System.setProperty("apple.awt.application.appearance", "system");
-            
-            // Настройка темы в зависимости от системы (особенно важно для Mac M1)
-            // Использование FlatPreferences для автоматического определения темы
-            UIManager.put("FlatLaf.setPreferredAppearance", "system");
-            
-            if (isSystemDarkMode()) {
-                FlatMacDarkLaf.setup();
-            } else {
-                FlatMacLightLaf.setup();
+
+            // Если запущен в безголовом режиме (например, в Docker), запускаем веб-сервер
+            if (java.awt.GraphicsEnvironment.isHeadless()) {
+                startWebServer();
+                return;
             }
+
+            // Выбор режима запуска
+            String[] options = {"Приложение (GUI)", "Сайт (Web)"};
+            int selection = JOptionPane.showOptionDialog(null, 
+                    "Выберите режим запуска:", 
+                    "Smart Organizer Setup", 
+                    JOptionPane.DEFAULT_OPTION, 
+                    JOptionPane.QUESTION_MESSAGE, 
+                    null, options, options[0]);
+
+            if (selection == 1) {
+                startWebServer();
+            } else if (selection == 0) {
+                startGui();
+            } else {
+                System.exit(0);
+            }
+
+        } catch (Exception e) {
+            LOGGER.error("Fatal error during startup", e);
+        }
+    }
+
+    private static void startWebServer() {
+        LOGGER.info("Starting Web Server mode...");
+        try {
+            WebServer server = new WebServer();
+            server.start(8080);
             
-            SwingUtilities.invokeLater(() -> {
+            // Автоматически открываем браузер, если мы не в безголовом режиме
+            if (!java.awt.GraphicsEnvironment.isHeadless()) {
                 try {
-                    LOGGER.info("Initializing controllers and services...");
+                    if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
+                        String url = "http://localhost:8080";
+                        LOGGER.info("Opening browser: {}", url);
+                        java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
+                    } else {
+                        LOGGER.warn("Desktop or BROWSE action is not supported. Please open http://localhost:8080 manually.");
+                    }
+                } catch (Exception e) {
+                    LOGGER.error("Failed to open browser", e);
+                }
+            }
+        } catch (Exception e) {
+            LOGGER.error("Failed to start web server", e);
+            if (!java.awt.GraphicsEnvironment.isHeadless()) {
+                String message = "Не удалось запустить веб-сервер: " + e.getMessage();
+                if (e.getMessage() != null && e.getMessage().contains("Address already in use")) {
+                    message += "\nПорт 8080 уже занят другим приложением или Docker-контейнером.";
+                }
+                JOptionPane.showMessageDialog(null, 
+                    message, 
+                    "Ошибка запуска", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private static void startGui() {
+        LOGGER.info("Starting GUI mode...");
+        // Подавляем предупреждения о Log4j2 и нативном доступе
+        System.setProperty("log4j2.disable.jmx", "true");
+        System.setProperty("apple.awt.application.appearance", "system");
+        
+        // Настройка темы в зависимости от системы (особенно важно для Mac M1)
+        UIManager.put("FlatLaf.setPreferredAppearance", "system");
+        
+        if (isSystemDarkMode()) {
+            FlatMacDarkLaf.setup();
+        } else {
+            FlatMacLightLaf.setup();
+        }
+        
+        SwingUtilities.invokeLater(() -> {
+            try {
+                LOGGER.info("Initializing controllers and services...");
                     TikaMetadataAdapter metadataAdapter = new TikaMetadataAdapter();
                     NioFileAdapter fileAdapter = new NioFileAdapter();
                     ThumbnailCacheService cacheService = new ThumbnailCacheService();
@@ -85,9 +149,6 @@ public class Main {
                     JOptionPane.showMessageDialog(null, "Ошибка при запуске интерфейса: " + e.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
                 }
             });
-        } catch (Exception e) {
-            LOGGER.error("Fatal error during startup", e);
-        }
     }
 
     private static boolean isSystemDarkMode() {

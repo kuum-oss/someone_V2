@@ -13,10 +13,10 @@ public class DatabaseInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseInitializer.class);
 
     public static void initialize() {
-        String baseUrl = DatabaseConfig.getProperty("db.url");
-        String dbName = DatabaseConfig.getProperty("db.name");
-        String user = DatabaseConfig.getProperty("db.user");
-        String pass = DatabaseConfig.getProperty("db.password");
+        String baseUrl = System.getenv("DB_URL") != null ? System.getenv("DB_URL") : DatabaseConfig.getProperty("db.url");
+        String dbName = System.getenv("DB_NAME") != null ? System.getenv("DB_NAME") : DatabaseConfig.getProperty("db.name");
+        String user = System.getenv("DB_USER") != null ? System.getenv("DB_USER") : DatabaseConfig.getProperty("db.user");
+        String pass = System.getenv("DB_PASSWORD") != null ? System.getenv("DB_PASSWORD") : DatabaseConfig.getProperty("db.password");
 
         LOGGER.info("Attempting to initialize database at {} with user {}", baseUrl, user);
 
