@@ -110,7 +110,7 @@ public class JdbcBookRepository implements BookRepository {
     }
 
     private StoredBook mapResultSetToStoredBook(ResultSet rs, boolean includeContent) throws SQLException {
-        return StoredBook.builder()
+        StoredBook.Builder builder = StoredBook.builder()
                 .id(rs.getInt("id"))
                 .userId(rs.getInt("user_id"))
                 .title(rs.getString("title"))
@@ -127,10 +127,23 @@ public class JdbcBookRepository implements BookRepository {
                 .originalName(rs.getString("original_name"))
                 .fileSize(rs.getLong("file_size"))
                 .fileContent(includeContent ? rs.getBytes("file_content") : null)
-                .isPublic(rs.getBoolean("is_public"))
-                .bookType(StoredBook.BookType.valueOf(rs.getString("book_type")))
-                .isAvailable(rs.getBoolean("is_available"))
-                .build();
+                .isPublic(rs.getBoolean("is_public"));
+
+        // Безопасное чтение ENUM и BOOLEAN
+        try {
+            String typeStr = rs.getString("book_type");
+            builder.bookType(typeStr != null ? StoredBook.BookType.valueOf(typeStr) : StoredBook.BookType.ELECTRONIC);
+        } catch (Exception e) {
+            builder.bookType(StoredBook.BookType.ELECTRONIC);
+        }
+
+        try {
+            builder.isAvailable(rs.getBoolean("is_available"));
+        } catch (Exception e) {
+            builder.isAvailable(true);
+        }
+
+        return builder.build();
     }
 
     @Override

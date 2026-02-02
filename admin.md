@@ -32,19 +32,30 @@
     - `ThumbnailCacheService`: Сервис для кэширования обложек на диске.
 
 ### 3. Infrastructure (Внешние системы) - `org.example.infrastructure`
-Самый внешний слой: UI, внешние API, конфигурация.
+Самый внешний слой: UI, Web, База данных, конфигурация.
 
 *   **UI** (`org.example.infrastructure.ui`):
     - `BookLibraryGui`: Главное окно приложения на Swing.
     - `components/BookDetailsPanel`: Панель с детальной информацией о книге.
-    - `LibraryScanner`: Асинхронный сканер файлов (SwingWorker).
     - `GenreImageService`: Логика подбора иконок для жанров.
-    - `UiUtils`: Утилиты для настройки окна (размер, центрирование, минимальные габариты).
-*   **External** (`org.example.infrastructure.external`):
-    - `ExternalMetadataGatewayImpl`: Реализация `ExternalMetadataGateway`. Обращается к Google Books API и Open Library для получения недостающей информации.
+*   **Web** (`org.example.infrastructure.web`):
+    - `WebServer`: Сервер на базе Javalin для отображения библиотеки в браузере.
+    - `templates/library.ftl`: Шаблон FreeMarker для генерации HTML.
+*   **DB** (`org.example.infrastructure.db`):
+    - `DatabaseInitializer`: Скрипты создания таблиц и механизм повторных попыток подключения.
+    - `DatabaseConfig`: Конфигурация пула соединений (DBCP2).
+*   **Repository** (`org.example.infrastructure.repository`):
+    - `JdbcBookRepository`: Реализация доступа к книгам в MySQL.
+    - `JdbcUserRepository`: Управление пользователями.
 
 ### 4. Application Root - `org.example`
-*   **Main.java**: Точка входа в приложение. Выполняет роль **Composition Root** — создает все объекты и связывает их (Dependency Injection) согласно архитектуре.
+*   **Main.java**: Точка входа. Реализует выбор режима запуска (GUI/Web) и логику автоматического открытия браузера.
+
+## Контейнеризация и Docker
+Проект полностью поддерживает Docker:
+- **Dockerfile**: Использует Multi-stage build (Maven для сборки, JRE для запуска).
+- **docker-compose.yml**: Поднимает связку App + MySQL.
+- **Healthcheck**: Приложение ждет готовности базы данных перед запуском.
 
 ## База данных и Хранилище
 

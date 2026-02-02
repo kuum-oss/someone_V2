@@ -20,156 +20,167 @@ public class DatabaseInitializer {
 
         LOGGER.info("Attempting to initialize database at {} with user {}", baseUrl, user);
 
+        int maxRetries = 5;
+        int retryDelay = 3000; // 3 seconds
+        boolean connected = false;
+
+        for (int i = 0; i < maxRetries; i++) {
+            try {
+                Class.forName("com.mysql.cj.jdbc.Driver");
+                
+                // Проверка доступности порта перед попыткой подключения (опционально, но полезно)
+                
+                // 1. Создание БД если не существует
+                try (Connection conn = DriverManager.getConnection(baseUrl, user, pass);
+                     Statement stmt = conn.createStatement()) {
+                    stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbName);
+                    LOGGER.info("Database '{}' checked/created.", dbName);
+                }
+
+                // 2. Создание таблиц
+                String fullUrl = baseUrl + dbName;
+                try (Connection conn = DriverManager.getConnection(fullUrl, user, pass);
+                     Statement stmt = conn.createStatement()) {
+                    
+                    setupTables(stmt);
+                    LOGGER.info("Tables checked/created successfully.");
+                    connected = true;
+                    break;
+                }
+            } catch (Exception e) {
+                LOGGER.warn("Database initialization attempt {} failed: {}. Retrying in {}ms...", (i + 1), e.getMessage(), retryDelay);
+                try {
+                    Thread.sleep(retryDelay);
+                } catch (InterruptedException ie) {
+                    Thread.currentThread().interrupt();
+                    break;
+                }
+            }
+        }
+
+        if (!connected) {
+            LOGGER.error("Failed to initialize database after {} attempts.", maxRetries);
+            if (!java.awt.GraphicsEnvironment.isHeadless()) {
+                JOptionPane.showMessageDialog(null,
+                    "Не удалось подключиться к базе данных MySQL после нескольких попыток.\n" +
+                    "Убедитесь, что MySQL запущен и доступен.\n" +
+                    "Приложение может работать некорректно.",
+                    "Ошибка базы данных", JOptionPane.ERROR_MESSAGE);
+            }
+        }
+    }
+
+    private static void setupTables(Statement stmt) throws SQLException {
+        String createUsersTable = "CREATE TABLE IF NOT EXISTS users (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY," +
+                "email VARCHAR(255) NOT NULL UNIQUE," +
+                "password VARCHAR(255) NOT NULL," +
+                "is_admin BOOLEAN NOT NULL DEFAULT FALSE," +
+                "points INT NOT NULL DEFAULT 5" +
+                ")";
+        stmt.executeUpdate(createUsersTable);
+
+        String createBooksTable = "CREATE TABLE IF NOT EXISTS books (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY," +
+                "user_id INT NOT NULL," +
+                "title VARCHAR(255) NOT NULL," +
+                "author VARCHAR(255)," +
+                "genre VARCHAR(100)," +
+                "year VARCHAR(20)," +
+                "series VARCHAR(255)," +
+                "series_index INT," +
+                "language VARCHAR(50)," +
+                "description TEXT," +
+                "cover MEDIUMBLOB," +
+                "author_photo MEDIUMBLOB," +
+                "file_path VARCHAR(512)," +
+                "original_name VARCHAR(255) NOT NULL," +
+                "file_size BIGINT NOT NULL DEFAULT 0," +
+                "file_content LONGBLOB," +
+                "is_public BOOLEAN NOT NULL DEFAULT FALSE," +
+                "book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'," +
+                "is_available BOOLEAN NOT NULL DEFAULT TRUE," +
+                "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
+                ")";
+        stmt.executeUpdate(createBooksTable);
+
+        String createBlacklistTable = "CREATE TABLE IF NOT EXISTS blacklist (" +
+                "email VARCHAR(255) PRIMARY KEY," +
+                "reason TEXT," +
+                "banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
+                ")";
+        stmt.executeUpdate(createBlacklistTable);
+
+        String createNotificationsTable = "CREATE TABLE IF NOT EXISTS notifications (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY," +
+                "user_id INT," +
+                "message TEXT NOT NULL," +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                "is_read BOOLEAN DEFAULT FALSE," +
+                "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
+                ")";
+        stmt.executeUpdate(createNotificationsTable);
+
+        String createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY," +
+                "user_id INT NOT NULL," +
+                "book_id INT NOT NULL," +
+                "status ENUM('PENDING', 'SHIPPED', 'DELIVERED', 'CANCELLED') DEFAULT 'PENDING'," +
+                "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
+                "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE," +
+                "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE" +
+                ")";
+        stmt.executeUpdate(createOrdersTable);
+
+        // Пробуем добавить колонки, если таблица уже существует
+        String[] columnsToAdd = {
+            "ALTER TABLE books ADD COLUMN author VARCHAR(255)",
+            "ALTER TABLE books ADD COLUMN genre VARCHAR(100)",
+            "ALTER TABLE books ADD COLUMN year VARCHAR(20)",
+            "ALTER TABLE books ADD COLUMN series VARCHAR(255)",
+            "ALTER TABLE books ADD COLUMN series_index INT",
+            "ALTER TABLE books ADD COLUMN language VARCHAR(50)",
+            "ALTER TABLE books ADD COLUMN description TEXT",
+            "ALTER TABLE books ADD COLUMN cover MEDIUMBLOB",
+            "ALTER TABLE books ADD COLUMN author_photo MEDIUMBLOB",
+            "ALTER TABLE books ADD COLUMN book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'",
+            "ALTER TABLE books ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE"
+        };
+
+        for (String sql : columnsToAdd) {
+            try {
+                stmt.executeUpdate(sql);
+            } catch (SQLException ignored) {}
+        }
+
         try {
-            Class.forName("com.mysql.cj.jdbc.Driver");
+            stmt.executeUpdate("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE");
+        } catch (SQLException ignored) {}
 
-            // 1. Создание БД если не существует
-            try (Connection conn = DriverManager.getConnection(baseUrl, user, pass);
-                 Statement stmt = conn.createStatement()) {
-                stmt.executeUpdate("CREATE DATABASE IF NOT EXISTS " + dbName);
-                LOGGER.info("Database '{}' checked/created.", dbName);
-            } catch (Exception e) {
-                LOGGER.error("Failed to create database '{}'. Check if MySQL is running and credentials are correct.", dbName, e);
-                throw e;
-            }
+        try {
+            stmt.executeUpdate("ALTER TABLE users ADD COLUMN points INT NOT NULL DEFAULT 5");
+        } catch (SQLException ignored) {}
 
-            // 2. Создание таблиц
-            // Используем прямое соединение с БД для создания таблиц,
-            // так как DatabaseConfig может не сработать если БД только что была создана
-            String fullUrl = baseUrl + dbName;
-            try (Connection conn = DriverManager.getConnection(fullUrl, user, pass);
-                 Statement stmt = conn.createStatement()) {
+        try {
+            stmt.executeUpdate("ALTER TABLE books ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT FALSE");
+        } catch (SQLException ignored) {}
 
-                String createUsersTable = "CREATE TABLE IF NOT EXISTS users (" +
-                        "id INT AUTO_INCREMENT PRIMARY KEY," +
-                        "email VARCHAR(255) NOT NULL UNIQUE," +
-                        "password VARCHAR(255) NOT NULL," +
-                        "is_admin BOOLEAN NOT NULL DEFAULT FALSE," +
-                        "points INT NOT NULL DEFAULT 5" +
-                        ")";
-                stmt.executeUpdate(createUsersTable);
+        try {
+            stmt.executeUpdate("ALTER TABLE books MODIFY COLUMN file_path VARCHAR(512) NULL");
+        } catch (SQLException ignored) {}
 
-                String createBooksTable = "CREATE TABLE IF NOT EXISTS books (" +
-                        "id INT AUTO_INCREMENT PRIMARY KEY," +
-                        "user_id INT NOT NULL," +
-                        "title VARCHAR(255) NOT NULL," +
-                        "author VARCHAR(255)," +
-                        "genre VARCHAR(100)," +
-                        "year VARCHAR(20)," +
-                        "series VARCHAR(255)," +
-                        "series_index INT," +
-                        "language VARCHAR(50)," +
-                        "description TEXT," +
-                        "cover MEDIUMBLOB," +
-                        "author_photo MEDIUMBLOB," +
-                        "file_path VARCHAR(512)," +
-                        "original_name VARCHAR(255) NOT NULL," +
-                        "file_size BIGINT NOT NULL DEFAULT 0," +
-                        "file_content LONGBLOB," +
-                        "is_public BOOLEAN NOT NULL DEFAULT FALSE," +
-                        "book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'," +
-                        "is_available BOOLEAN NOT NULL DEFAULT TRUE," +
-                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
-                        ")"
-                        ;
-                stmt.executeUpdate(createBooksTable);
+        try {
+            stmt.executeUpdate("ALTER TABLE books MODIFY COLUMN file_content LONGBLOB");
+        } catch (SQLException ignored) {}
 
-                String createBlacklistTable = "CREATE TABLE IF NOT EXISTS blacklist (" +
-                        "email VARCHAR(255) PRIMARY KEY," +
-                        "reason TEXT," +
-                        "banned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP" +
-                        ")";
-                stmt.executeUpdate(createBlacklistTable);
+        try {
+            stmt.executeUpdate("ALTER TABLE books ADD COLUMN file_content LONGBLOB");
+        } catch (SQLException ignored) {}
 
-                String createNotificationsTable = "CREATE TABLE IF NOT EXISTS notifications (" +
-                        "id INT AUTO_INCREMENT PRIMARY KEY," +
-                        "user_id INT," +
-                        "message TEXT NOT NULL," +
-                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                        "is_read BOOLEAN DEFAULT FALSE," +
-                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
-                        ")";
-                stmt.executeUpdate(createNotificationsTable);
-
-                String createOrdersTable = "CREATE TABLE IF NOT EXISTS orders (" +
-                        "id INT AUTO_INCREMENT PRIMARY KEY," +
-                        "user_id INT NOT NULL," +
-                        "book_id INT NOT NULL," +
-                        "status ENUM('PENDING', 'SHIPPED', 'DELIVERED', 'CANCELLED') DEFAULT 'PENDING'," +
-                        "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
-                        "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE," +
-                        "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE" +
-                        ")";
-                stmt.executeUpdate(createOrdersTable);
-
-                // Пробуем добавить колонки, если таблица уже существует
-                String[] columnsToAdd = {
-                    "ALTER TABLE books ADD COLUMN author VARCHAR(255)",
-                    "ALTER TABLE books ADD COLUMN genre VARCHAR(100)",
-                    "ALTER TABLE books ADD COLUMN year VARCHAR(20)",
-                    "ALTER TABLE books ADD COLUMN series VARCHAR(255)",
-                    "ALTER TABLE books ADD COLUMN series_index INT",
-                    "ALTER TABLE books ADD COLUMN language VARCHAR(50)",
-                    "ALTER TABLE books ADD COLUMN description TEXT",
-                    "ALTER TABLE books ADD COLUMN cover MEDIUMBLOB",
-                    "ALTER TABLE books ADD COLUMN author_photo MEDIUMBLOB",
-                    "ALTER TABLE books ADD COLUMN book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'",
-                    "ALTER TABLE books ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE"
-                };
-
-                for (String sql : columnsToAdd) {
-                    try {
-                        stmt.executeUpdate(sql);
-                    } catch (SQLException ignored) {}
-                }
-
-                try {
-                    stmt.executeUpdate("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE");
-                } catch (SQLException ignored) {}
-
-                try {
-                    stmt.executeUpdate("ALTER TABLE users ADD COLUMN points INT NOT NULL DEFAULT 5");
-                } catch (SQLException ignored) {}
-
-                try {
-                    stmt.executeUpdate("ALTER TABLE books ADD COLUMN is_public BOOLEAN NOT NULL DEFAULT FALSE");
-                } catch (SQLException ignored) {}
-
-                try {
-                    stmt.executeUpdate("ALTER TABLE books MODIFY COLUMN file_path VARCHAR(512) NULL");
-                } catch (SQLException ignored) {}
-
-                try {
-                    stmt.executeUpdate("ALTER TABLE books MODIFY COLUMN file_content LONGBLOB");
-                } catch (SQLException ignored) {}
-
-                try {
-                    stmt.executeUpdate("ALTER TABLE books ADD COLUMN file_content LONGBLOB");
-                } catch (SQLException ignored) {}
-
-                // Также попробуем увеличить max_allowed_packet на уровне сессии (для текущего соединения)
-                try {
-                    stmt.execute("SET GLOBAL max_allowed_packet=67108864");
-                } catch (SQLException e) {
-                    LOGGER.warn("Could not set GLOBAL max_allowed_packet: {}. This might require SUPER privileges.", e.getMessage());
-                }
-
-                LOGGER.info("Tables users and books checked/created.");
-            } catch (Exception e) {
-                LOGGER.error("Failed to create tables in database '{}'.", dbName, e);
-                throw e;
-            }
-
-        } catch (Exception e) {
-            LOGGER.error("Fatal error during database initialization", e);
-            // Мы не выбрасываем RuntimeException здесь, чтобы приложение могло запуститься
-            // (возможно, пользователь захочет пользоваться им без БД для локальных книг)
-            // Но пока оставим, как было, только с лучшим логированием.
-            JOptionPane.showMessageDialog(null,
-                "Не удалось подключиться к базе данных MySQL.\n" +
-                "Убедитесь, что MySQL запущен и пароль '74542474' верен.\n" +
-                "Ошибка: " + e.getMessage(),
-                "Ошибка базы данных", JOptionPane.ERROR_MESSAGE);
+        try {
+            stmt.execute("SET GLOBAL max_allowed_packet=67108864");
+        } catch (SQLException e) {
+            LOGGER.warn("Could not set GLOBAL max_allowed_packet: {}. This might require SUPER privileges.", e.getMessage());
         }
     }
 }

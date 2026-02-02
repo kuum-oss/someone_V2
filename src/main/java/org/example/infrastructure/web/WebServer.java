@@ -30,57 +30,75 @@ public class WebServer {
         this.freeMarkerCfg.setFallbackOnNullLoopVariable(false);
     }
 
-    public void start(int port) {
+    public int start(int port) {
         try {
             app = Javalin.create(config -> {
                 config.staticFiles.add("/public");
                 config.showJavalinBanner = false;
-            }).start(port);
+            });
 
-            app.get("/", ctx -> {
-                try {
-                    List<StoredBook> books = bookRepository.findPublicBooks();
-                    if (books.isEmpty()) {
-                        books = bookRepository.findByUserId(1);
-                    }
-                    
-                    Template template = freeMarkerCfg.getTemplate("templates/library.ftl");
-                    StringWriter writer = new StringWriter();
-                    template.process(Map.of("books", books), writer);
-                    
-                    ctx.contentType("text/html").result(writer.toString());
-                } catch (Exception e) {
-                    LOGGER.error("Error processing index page", e);
-                    ctx.status(500).result("Internal Server Error: " + e.getMessage());
+            // Настройка эндпоинтов
+            setupRoutes();
+
+            try {
+                app.start(port);
+            } catch (Exception e) {
+                if (e.getMessage() != null && e.getMessage().contains("Address already in use")) {
+                    LOGGER.warn("Port {} is busy, trying to find an available port...", port);
+                    app.start(0); // 0 means any available port
+                    port = app.port();
+                } else {
+                    throw e;
                 }
-            });
-
-            app.get("/book/{id}/cover", ctx -> {
-                try {
-                    int id = Integer.parseInt(ctx.pathParam("id"));
-                    bookRepository.findById(id).ifPresentOrElse(book -> {
-                        if (book.getCover() != null) {
-                            ctx.contentType("image/jpeg").result(book.getCover());
-                        } else {
-                            ctx.status(404);
-                        }
-                    }, () -> ctx.status(404));
-                } catch (Exception e) {
-                    LOGGER.error("Error serving cover", e);
-                    ctx.status(500);
-                }
-            });
-
-            app.exception(Exception.class, (e, ctx) -> {
-                LOGGER.error("Unhandled exception in web server", e);
-                ctx.status(500).result("Internal Server Error");
-            });
+            }
 
             LOGGER.info("Web server started successfully at http://localhost:{}", port);
+            return port;
         } catch (Exception e) {
-            LOGGER.error("Failed to start web server on port {}", port, e);
+            LOGGER.error("Failed to start web server", e);
             throw new RuntimeException("Web server failed to start", e);
         }
+    }
+
+    private void setupRoutes() {
+        app.get("/", ctx -> {
+            try {
+                List<StoredBook> books = bookRepository.findPublicBooks();
+                if (books.isEmpty()) {
+                    books = bookRepository.findByUserId(1);
+                }
+                
+                Template template = freeMarkerCfg.getTemplate("templates/library.ftl");
+                StringWriter writer = new StringWriter();
+                template.process(Map.of("books", books), writer);
+                
+                ctx.contentType("text/html").result(writer.toString());
+            } catch (Exception e) {
+                LOGGER.error("Error processing index page", e);
+                ctx.status(500).result("Internal Server Error: " + e.getMessage());
+            }
+        });
+
+        app.get("/book/{id}/cover", ctx -> {
+            try {
+                int id = Integer.parseInt(ctx.pathParam("id"));
+                bookRepository.findById(id).ifPresentOrElse(book -> {
+                    if (book.getCover() != null) {
+                        ctx.contentType("image/jpeg").result(book.getCover());
+                    } else {
+                        ctx.status(404);
+                    }
+                }, () -> ctx.status(404));
+            } catch (Exception e) {
+                LOGGER.error("Error serving cover", e);
+                ctx.status(500);
+            }
+        });
+
+        app.exception(Exception.class, (e, ctx) -> {
+            LOGGER.error("Unhandled exception in web server", e);
+            ctx.status(500).result("Internal Server Error");
+        });
     }
 
     public void stop() {

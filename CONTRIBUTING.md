@@ -14,5 +14,13 @@ We welcome contributions! Here's how you can help:
 - Use 4 spaces for indentation.
 - Run `google-java-format` if possible.
 
-## CI/CD
-Every PR runs unit tests and static analysis. Make sure your code is clean!
+## Тестирование
+- Используйте `mvn test` для запуска юнит-тестов.
+- Для проверки работы в Docker используйте `docker-compose up --build`.
+- При добавлении новых функций в Веб-интерфейс, проверяйте корректность рендеринга шаблонов FreeMarker.
+
+## Локализация
+Если вы добавляете новый текст в интерфейс, обязательно обновите файлы:
+- `src/main/resources/messages_en.properties`
+- `src/main/resources/messages_ru.properties`
+- `src/main/resources/messages_uk.properties`

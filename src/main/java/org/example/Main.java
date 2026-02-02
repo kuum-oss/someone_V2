@@ -66,29 +66,32 @@ public class Main {
         LOGGER.info("Starting Web Server mode...");
         try {
             WebServer server = new WebServer();
-            server.start(8080);
+            int actualPort = server.start(8080);
             
             // Автоматически открываем браузер, если мы не в безголовом режиме
             if (!java.awt.GraphicsEnvironment.isHeadless()) {
                 try {
                     if (java.awt.Desktop.isDesktopSupported() && java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.BROWSE)) {
-                        String url = "http://localhost:8080";
+                        String url = "http://localhost:" + actualPort;
                         LOGGER.info("Opening browser: {}", url);
                         java.awt.Desktop.getDesktop().browse(new java.net.URI(url));
                     } else {
-                        LOGGER.warn("Desktop or BROWSE action is not supported. Please open http://localhost:8080 manually.");
+                        LOGGER.warn("Desktop or BROWSE action is not supported. Please open http://localhost:{} manually.", actualPort);
+                        JOptionPane.showMessageDialog(null, 
+                            "Сервер запущен на http://localhost:" + actualPort + "\nПожалуйста, откройте этот адрес в браузере вручную.",
+                            "Сервер запущен", JOptionPane.INFORMATION_MESSAGE);
                     }
                 } catch (Exception e) {
                     LOGGER.error("Failed to open browser", e);
+                    JOptionPane.showMessageDialog(null, 
+                        "Сервер запущен на http://localhost:" + actualPort + "\nНо не удалось открыть браузер автоматически.",
+                        "Предупреждение", JOptionPane.WARNING_MESSAGE);
                 }
             }
         } catch (Exception e) {
             LOGGER.error("Failed to start web server", e);
             if (!java.awt.GraphicsEnvironment.isHeadless()) {
                 String message = "Не удалось запустить веб-сервер: " + e.getMessage();
-                if (e.getMessage() != null && e.getMessage().contains("Address already in use")) {
-                    message += "\nПорт 8080 уже занят другим приложением или Docker-контейнером.";
-                }
                 JOptionPane.showMessageDialog(null, 
                     message, 
                     "Ошибка запуска", JOptionPane.ERROR_MESSAGE);
