@@ -5,6 +5,7 @@ import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.HttpStatus;
 import org.example.core.entity.Notification;
 import org.example.core.entity.Order;
 import org.example.core.entity.StoredBook;
@@ -20,10 +21,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class WebServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebServer.class);
@@ -36,8 +34,16 @@ public class WebServer {
     private final AdminDashboardService dashboardService;
     private final OrderService orderService;
     
+    private final ResourceBundle messages;
+    
     private final Configuration freeMarkerCfg;
     private Javalin app;
+
+    // Простая защита от DoS: ограничение количества запросов по IP
+    private final Map<String, Long> requestCounts = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Long> lastRequestTime = new java.util.concurrent.ConcurrentHashMap<>();
+    private static final int MAX_REQUESTS_PER_MINUTE = 60;
+    private static final long MIN_INTERVAL_MS = 100; // Минимальный интервал между запросами (10 в секунду)
 
     public WebServer() {
         this.bookRepository = new JdbcBookRepository();
@@ -48,6 +54,8 @@ public class WebServer {
         this.authService = new AuthService(userRepository);
         this.dashboardService = new AdminDashboardService(bookRepository, notificationRepository);
         this.orderService = new OrderService(orderRepository, bookRepository, dashboardService);
+        
+        this.messages = ResourceBundle.getBundle("messages", Locale.getDefault());
         
         this.freeMarkerCfg = new Configuration(Configuration.VERSION_2_3_32);
         this.freeMarkerCfg.setClassForTemplateLoading(WebServer.class, "/");
@@ -65,6 +73,9 @@ public class WebServer {
                 config.staticFiles.add("/public");
                 config.showJavalinBanner = false;
             });
+
+            // Базовые меры безопасности
+            setupSecurity();
 
             // Настройка эндпоинтов
             setupRoutes();
@@ -87,6 +98,69 @@ public class WebServer {
             LOGGER.error("Failed to start web server", e);
             throw new RuntimeException("Web server failed to start", e);
         }
+    }
+
+    private void setupSecurity() {
+        // 1. Ограничение скорости (Rate Limiting) для защиты от DoS/Brute-force
+        app.before(ctx -> {
+            String ip = ctx.ip();
+            long now = System.currentTimeMillis();
+            
+            // Проверка интервала
+            Long lastTime = lastRequestTime.get(ip);
+            if (lastTime != null && (now - lastTime) < MIN_INTERVAL_MS) {
+                LOGGER.warn("DoS protection triggered for IP: {}. Too fast requests.", ip);
+                ctx.status(HttpStatus.TOO_MANY_REQUESTS).result(messages.getString("error.too_many_requests"));
+                return;
+            }
+            lastRequestTime.put(ip, now);
+
+            // Ограничение по минутам
+            long minute = now / 60000;
+            String key = ip + ":" + minute;
+            long count = requestCounts.compute(key, (k, v) -> v == null ? 1L : v + 1L);
+            if (count > MAX_REQUESTS_PER_MINUTE) {
+                LOGGER.warn("DoS protection triggered for IP: {}. Minute limit exceeded.", ip);
+                ctx.status(HttpStatus.TOO_MANY_REQUESTS).result(messages.getString("error.too_many_requests"));
+                return;
+            }
+            
+            // Очистка старых данных каждые 5 минут
+            if (requestCounts.size() > 1000) {
+                requestCounts.entrySet().removeIf(entry -> {
+                    String[] parts = entry.getKey().split(":");
+                    if (parts.length < 2) return true;
+                    try {
+                        long entryMinute = Long.parseLong(parts[parts.length - 1]);
+                        return entryMinute < minute;
+                    } catch (NumberFormatException e) {
+                        return true;
+                    }
+                });
+                lastRequestTime.entrySet().removeIf(entry -> (now - entry.getValue()) > 60000);
+            }
+        });
+
+        // 2. Безопасные заголовки (Security Headers)
+        app.after(ctx -> {
+            ctx.header("X-Content-Type-Options", "nosniff");
+            ctx.header("X-Frame-Options", "DENY");
+            ctx.header("X-XSS-Protection", "1; mode=block");
+            ctx.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
+            ctx.header("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https://via.placeholder.com; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'");
+        });
+
+        // 3. Базовая проверка CSRF для POST запросов
+        app.before(ctx -> {
+            if (ctx.method().toString().equals("POST")) {
+                String referer = ctx.header("Referer");
+                String host = ctx.header("Host");
+                if (referer != null && host != null && !referer.contains(host)) {
+                    LOGGER.warn("Potential CSRF attack detected from IP: {}. Referer: {}", ctx.ip(), referer);
+                    ctx.status(HttpStatus.FORBIDDEN).result(messages.getString("error.csrf_detected"));
+                }
+            }
+        });
     }
 
     private void setupRoutes() {
