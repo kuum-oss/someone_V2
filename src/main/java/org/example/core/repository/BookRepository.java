@@ -13,6 +13,7 @@ public interface BookRepository {
     Optional<StoredBook> findById(Integer id);
     void deleteById(Integer id);
     List<StoredBook> findByType(StoredBook.BookType type);
+    List<StoredBook> findOwnedBooksByUserId(Integer userId);
     long getTotalStorageSize();
     long getTotalBookCount();
 }

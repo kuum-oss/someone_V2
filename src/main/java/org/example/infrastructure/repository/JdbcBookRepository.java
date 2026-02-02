@@ -109,6 +109,28 @@ public class JdbcBookRepository implements BookRepository {
         return books;
     }
 
+    @Override
+    public List<StoredBook> findOwnedBooksByUserId(Integer userId) {
+        List<StoredBook> books = new ArrayList<>();
+        // Книги, которые пользователь загрузил сам, ИЛИ которые он купил (есть в таблице orders)
+        String sql = "SELECT b.* FROM books b " +
+                     "WHERE b.user_id = ? " +
+                     "OR b.id IN (SELECT book_id FROM orders WHERE user_id = ?)";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, userId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    books.add(mapResultSetToStoredBook(rs, false));
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding owned books", e);
+        }
+        return books;
+    }
+
     private StoredBook mapResultSetToStoredBook(ResultSet rs, boolean includeContent) throws SQLException {
         StoredBook.Builder builder = StoredBook.builder()
                 .id(rs.getInt("id"))

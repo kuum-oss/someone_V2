@@ -132,7 +132,7 @@ public class Main {
                     org.example.infrastructure.repository.JdbcNotificationRepository notificationRepository = new org.example.infrastructure.repository.JdbcNotificationRepository();
 
                     AuthService authService = new AuthService(userRepository);
-                    FileStorageService storageService = new FileStorageService(bookRepository, authService, metadataAdapter);
+                    FileStorageService storageService = new FileStorageService(bookRepository, authService, metadataAdapter, orderRepository);
                     org.example.core.service.AdminDashboardService dashboardService = new org.example.core.service.AdminDashboardService(bookRepository, notificationRepository);
                     org.example.core.service.OrderService orderService = new org.example.core.service.OrderService(orderRepository, bookRepository, dashboardService);
                     AdminService adminService = new AdminService(storageService, authService, userRepository, bookRepository);

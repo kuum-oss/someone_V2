@@ -1,8 +1,10 @@
 package org.example.core.service;
 
 import org.example.core.entity.Book;
+import org.example.core.entity.Order;
 import org.example.core.entity.StoredBook;
 import org.example.core.repository.BookRepository;
+import org.example.core.repository.OrderRepository;
 import org.example.core.usecase.port.MetadataGateway;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,10 +21,13 @@ public class FileStorageService {
     private final AuthService authService;
     private final MetadataGateway metadataGateway;
 
-    public FileStorageService(BookRepository bookRepository, AuthService authService, MetadataGateway metadataGateway) {
+    private final OrderRepository orderRepository;
+
+    public FileStorageService(BookRepository bookRepository, AuthService authService, MetadataGateway metadataGateway, OrderRepository orderRepository) {
         this.bookRepository = bookRepository;
         this.authService = authService;
         this.metadataGateway = metadataGateway;
+        this.orderRepository = orderRepository;
     }
 
     public void uploadBook(Integer userId, Path sourceFile, String title) throws IOException {
@@ -118,28 +123,10 @@ public class FileStorageService {
         org.example.core.entity.StoredBook sourceBook = bookRepository.findById(publicBook.getId())
                 .orElseThrow(() -> new RuntimeException("Book not found with ID: " + publicBook.getId()));
 
-        byte[] content = bookRepository.getBookContent(sourceBook.getId());
-        
-        StoredBook userBook = StoredBook.builder()
-                .userId(userId)
-                .title(sourceBook.getTitle())
-                .author(sourceBook.getAuthor())
-                .genre(sourceBook.getGenre())
-                .year(sourceBook.getYear())
-                .series(sourceBook.getSeries())
-                .seriesIndex(sourceBook.getSeriesIndex())
-                .language(sourceBook.getLanguage())
-                .description(sourceBook.getDescription())
-                .cover(sourceBook.getCover())
-                .authorPhoto(sourceBook.getAuthorPhoto())
-                .filePath(null)
-                .originalName(sourceBook.getOriginalName())
-                .fileSize(sourceBook.getFileSize())
-                .fileContent(content)
-                .isPublic(false)
-                .build();
-                
-        bookRepository.save(userBook);
+        // Вместо дублирования книги в таблице books, мы просто создаем запись в orders,
+        // чтобы пользователь владел оригинальной публичной книгой.
+        orderRepository.save(new Order(null, userId, sourceBook.getId(), Order.Status.DELIVERED, java.time.LocalDateTime.now()));
+        LOGGER.info("Book '{}' purchased by user {}", sourceBook.getTitle(), userId);
     }
     
     public long getUserStorageUsage(Integer userId) {
