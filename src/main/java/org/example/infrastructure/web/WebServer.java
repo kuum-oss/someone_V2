@@ -52,6 +52,7 @@ public class WebServer {
         this.freeMarkerCfg = new Configuration(Configuration.VERSION_2_3_32);
         this.freeMarkerCfg.setClassForTemplateLoading(WebServer.class, "/");
         this.freeMarkerCfg.setDefaultEncoding("UTF-8");
+        this.freeMarkerCfg.setOutputEncoding("UTF-8");
         this.freeMarkerCfg.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
         this.freeMarkerCfg.setLogTemplateExceptions(false);
         this.freeMarkerCfg.setWrapUncheckedExceptions(true);
