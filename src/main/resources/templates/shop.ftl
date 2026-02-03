@@ -4,33 +4,42 @@
     <h1>🛒 Магазин книг</h1>
     <p>Здесь вы можете приобрести книги за поинты. Каждая книга стоит 1 поинт (имитация).</p>
     
-    <div class="book-list">
+    <div class="catalog">
         <#if books?has_content>
             <#list books as book>
                 <div class="book-card">
-                    <#if book.cover??>
-                        <img src="/book/${book.id?c}/cover" alt="${book.title}">
-                    <#else>
-                        <img src="https://via.placeholder.com/200x250?text=No+Cover" alt="No Cover">
-                    </#if>
-                    <h3>${book.title}</h3>
-                    <p><strong>Автор:</strong> ${book.author!"Неизвестен"}</p>
-                    <p><strong>Тип:</strong> ${book.bookType}</p>
-                    <#if book.bookType == "ELECTRONIC">
-                        <p><strong>Цена:</strong> 1 Pt</p>
-                    <#else>
-                        <p><strong>Цена:</strong> Бесплатно</p>
-                    </#if>
+                    <div class="book-cover">
+                        <#if book.cover??>
+                            <img src="/book/${book.id?c}/cover" alt="${book.title}">
+                        <#else>
+                            Нет обложки
+                        </#if>
+                    </div>
+
+                    <span class="badge ${book.bookType?lower_case}">${book.bookType}</span>
+                    
+                    <h3 class="book-title">${book.title}</h3>
+                    <p class="book-author">${book.author!"Автор не указан"}</p>
+                    
+                    <div class="price-row">
+                        <#if book.bookType == "ELECTRONIC">
+                            <div class="price">1 поинт</div>
+                        <#else>
+                            <div class="price free">Бесплатно</div>
+                        </#if>
+                        <div class="status">Доступна</div>
+                    </div>
+
                     <div style="margin-top: 10px;">
                         <#if currentUser??>
-                            <form action="/shop/buy" method="POST">
+                            <form action="/shop/buy" method="POST" style="margin: 0;">
                                 <input type="hidden" name="bookId" value="${book.id?c}">
-                                <button type="submit" class="btn btn-success" style="width: 100%; background-color: var(--success-color); color: white;">
+                                <button type="submit" class="cta">
                                     <#if book.bookType == "PHYSICAL">Заказать<#else>Купить</#if>
                                 </button>
                             </form>
                         <#else>
-                            <a href="/login" class="btn btn-secondary" style="width: 100%;">Войдите, чтобы <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a>
+                            <a href="/login" class="cta">Войдите, чтобы <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a>
                         </#if>
                     </div>
                 </div>

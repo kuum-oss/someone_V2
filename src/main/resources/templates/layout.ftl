@@ -7,45 +7,139 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
         :root {
-            --primary-color: #007bff;
-            --secondary-color: #6c757d;
-            --success-color: #28a745;
+            --primary-color: #111827;
+            --secondary-color: #6b7280;
+            --success-color: #16a34a;
             --danger-color: #dc3545;
-            --light-color: #f8f9fa;
-            --dark-color: #343a40;
+            --light-color: #f3f4f6;
+            --dark-color: #111827;
             --white: #ffffff;
-            --shadow: 0 2px 10px rgba(0,0,0,0.1);
+            --shadow: 0 1px 3px rgba(0,0,0,0.1);
+            --border-color: #e5e7eb;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f9; margin: 0; padding: 0; color: #333; }
+        body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #f9fafb; margin: 0; padding: 0; color: #111827; }
         header { background-color: var(--dark-color); color: var(--white); padding: 1rem 0; box-shadow: var(--shadow); }
         .nav-container { max-width: 1200px; margin: auto; display: flex; justify-content: space-between; align-items: center; padding: 0 20px; }
         .logo { font-size: 1.5rem; font-weight: bold; text-decoration: none; color: var(--white); display: flex; align-items: center; gap: 10px; }
         nav ul { list-style: none; display: flex; gap: 20px; margin: 0; padding: 0; }
-        nav a { text-decoration: none; color: #ccc; transition: color 0.2s; }
+        nav a { text-decoration: none; color: #9ca3af; transition: color 0.2s; font-size: 14px; font-weight: 500; }
         nav a:hover { color: var(--white); }
-        .user-info { display: flex; align-items: center; gap: 15px; }
-        .points-badge { background: var(--success-color); padding: 2px 8px; border-radius: 12px; font-size: 0.8rem; }
+        .user-info { display: flex; align-items: center; gap: 15px; font-size: 14px; }
+        .points-badge { background: #374151; color: #fff; padding: 4px 10px; border-radius: 999px; font-weight: 500; }
         .container { max-width: 1200px; margin: 2rem auto; padding: 0 20px; min-height: 80vh; }
-        footer { text-align: center; padding: 2rem; color: #888; border-top: 1px solid #ddd; margin-top: 3rem; }
-        .btn { display: inline-block; padding: 0.5rem 1rem; border-radius: 5px; text-decoration: none; cursor: pointer; border: none; font-size: 0.9rem; transition: opacity 0.2s; }
-        .btn:hover { opacity: 0.8; }
+        footer { text-align: center; padding: 3rem 20px; color: #6b7280; border-top: 1px solid var(--border-color); margin-top: 4rem; font-size: 14px; }
+
+        .btn { display: inline-block; padding: 0.5rem 1rem; border-radius: 6px; text-decoration: none; cursor: pointer; border: none; font-size: 14px; font-weight: 500; transition: all 0.2s; text-align: center; }
+        .btn:hover { opacity: 0.9; }
         .btn-primary { background-color: var(--primary-color); color: white; }
-        .btn-secondary { background-color: var(--secondary-color); color: white; }
-        .btn-danger { background-color: var(--danger-color); color: white; }
-        .card { background: white; padding: 1.5rem; border-radius: 8px; box-shadow: var(--shadow); }
-        .form-group { margin-bottom: 1rem; }
-        .form-group label { display: block; margin-bottom: 0.5rem; }
-        .form-group input { width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        .alert { padding: 1rem; border-radius: 4px; margin-bottom: 1rem; }
-        .alert-error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-        
-        /* Book styles */
-        .book-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; }
-        .book-card { border: 1px solid #ddd; padding: 10px; border-radius: 5px; text-align: center; background: #fff; transition: transform 0.2s; text-decoration: none; color: inherit; }
-        .book-card:hover { transform: translateY(-5px); box-shadow: 0 5px 15px rgba(0,0,0,0.1); }
-        .book-card img { max-width: 100%; height: 250px; object-fit: cover; border-radius: 3px; }
-        .book-card h3 { margin: 10px 0 5px; font-size: 1.1em; color: var(--primary-color); }
-        .book-card p { margin: 0; color: #666; font-size: 0.9em; }
+        .btn-secondary { background-color: #fff; color: var(--primary-color); border: 1px solid var(--border-color); }
+        .btn-secondary:hover { background-color: var(--light-color); }
+        .btn-success { background-color: var(--success-color); color: white; }
+
+        /* New Catalog Grid */
+        .catalog {
+          display: grid;
+          grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+          gap: 24px;
+        }
+
+        /* Book Card */
+        .book-card {
+          border: 1px solid var(--border-color);
+          border-radius: 12px;
+          padding: 12px;
+          background: #fff;
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          transition: transform 0.15s, box-shadow 0.15s;
+          text-decoration: none;
+          color: inherit;
+          position: relative;
+        }
+        .book-card:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 12px 24px rgba(0,0,0,.08);
+        }
+
+        /* Covers & Placeholders */
+        .book-cover {
+          height: 280px;
+          background: linear-gradient(135deg, #e5e7eb, #f3f4f6);
+          border-radius: 8px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          color: #6b7280;
+          font-size: 14px;
+          overflow: hidden;
+          margin-bottom: 4px;
+        }
+        .book-cover img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        /* Typography */
+        .book-title {
+          font-weight: 600;
+          font-size: 16px;
+          line-height: 1.3;
+          max-height: 2.6em;
+          overflow: hidden;
+          margin: 4px 0 0;
+          display: -webkit-box;
+          -webkit-line-clamp: 2;
+          -webkit-box-orient: vertical;
+        }
+        .book-author {
+          font-size: 14px;
+          color: #6b7280;
+          margin: 0;
+        }
+
+        /* Badges */
+        .badge {
+          font-size: 11px;
+          font-weight: 600;
+          padding: 3px 8px;
+          border-radius: 999px;
+          width: fit-content;
+          text-transform: uppercase;
+          letter-spacing: 0.025em;
+        }
+        .badge.electronic { background: #e0f2fe; color: #0369a1; }
+        .badge.physical { background: #ecfeff; color: #155e75; }
+
+        /* Price & Status */
+        .price-row {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-top: 4px;
+        }
+        .price { font-weight: 700; font-size: 15px; }
+        .price.free { color: var(--success-color); }
+        .status { font-size: 12px; color: #6b7280; }
+
+        /* CTA */
+        .cta {
+          margin-top: auto;
+          text-align: center;
+          padding: 10px;
+          border-radius: 8px;
+          background: #111827;
+          color: #fff;
+          text-decoration: none;
+          font-size: 14px;
+          font-weight: 500;
+          border: none;
+          cursor: pointer;
+          width: 100%;
+          box-sizing: border-box;
+        }
+        .cta:hover { background: #1f2937; }
     </style>
 </head>
 <body>
@@ -63,7 +157,7 @@
             </nav>
             <div class="user-info">
                 <#if currentUser??>
-                    <span class="points-badge">💰 ${currentUser.points} pts</span>
+                    <span class="points-badge">💰 ${currentUser.points} поинтов</span>
                     <span>${currentUser.email}</span>
                     <a href="/logout" class="btn btn-secondary">Выйти</a>
                 <#else>

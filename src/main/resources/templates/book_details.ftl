@@ -3,11 +3,13 @@
 <@layout.main_layout title=book.title>
     <div class="book-details-container" style="display: flex; gap: 40px; align-items: flex-start;">
         <div class="book-cover-large" style="flex: 0 0 300px;">
-            <#if book.cover??>
-                <img src="/book/${book.id?c}/cover" alt="${book.title}" style="width: 100%; border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
-            <#else>
-                <img src="https://via.placeholder.com/300x400?text=No+Cover" alt="No Cover" style="width: 100%; border-radius: 8px;">
-            </#if>
+            <div class="book-cover" style="height: 400px; width: 300px; font-size: 18px;">
+                <#if book.cover??>
+                    <img src="/book/${book.id?c}/cover" alt="${book.title}" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                <#else>
+                    Нет обложки
+                </#if>
+            </div>
         </div>
         
         <div class="book-info-main" style="flex: 1;">
@@ -36,7 +38,9 @@
                     </#if>
                     <tr>
                         <td style="padding: 10px 0; color: #888;">Тип:</td>
-                        <td style="padding: 10px 0;">${book.bookType}</td>
+                        <td style="padding: 10px 0;">
+                            <span class="badge ${book.bookType?lower_case}">${book.bookType}</span>
+                        </td>
                     </tr>
                 </table>
             </div>
@@ -58,7 +62,7 @@
                         <form action="/shop/buy" method="post" style="margin: 0;">
                             <input type="hidden" name="bookId" value="${book.id?c}">
                             <button type="submit" class="btn btn-primary">
-                                <#if book.bookType == "PHYSICAL">Заказать книгу<#else>Купить за 1 Pt</#if>
+                                <#if book.bookType == "PHYSICAL">Заказать книгу<#else>Купить за 1 поинт</#if>
                             </button>
                         </form>
                     <#else>
