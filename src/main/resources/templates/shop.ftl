@@ -15,16 +15,22 @@
                     </#if>
                     <h3>${book.title}</h3>
                     <p><strong>Автор:</strong> ${book.author!"Неизвестен"}</p>
-                    <p><strong>Цена:</strong> 1 Pt</p>
                     <p><strong>Тип:</strong> ${book.bookType}</p>
+                    <#if book.bookType == "ELECTRONIC">
+                        <p><strong>Цена:</strong> 1 Pt</p>
+                    <#else>
+                        <p><strong>Цена:</strong> Бесплатно</p>
+                    </#if>
                     <div style="margin-top: 10px;">
                         <#if currentUser??>
                             <form action="/shop/buy" method="POST">
                                 <input type="hidden" name="bookId" value="${book.id?c}">
-                                <button type="submit" class="btn btn-success" style="width: 100%; background-color: var(--success-color); color: white;">Купить</button>
+                                <button type="submit" class="btn btn-success" style="width: 100%; background-color: var(--success-color); color: white;">
+                                    <#if book.bookType == "PHYSICAL">Заказать<#else>Купить</#if>
+                                </button>
                             </form>
                         <#else>
-                            <a href="/login" class="btn btn-secondary" style="width: 100%;">Войдите, чтобы купить</a>
+                            <a href="/login" class="btn btn-secondary" style="width: 100%;">Войдите, чтобы <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a>
                         </#if>
                     </div>
                 </div>

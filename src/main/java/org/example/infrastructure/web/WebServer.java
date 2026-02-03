@@ -317,21 +317,16 @@ public class WebServer {
                     return; // Уже куплено
                 }
 
-                if (user.getPoints() >= 1) {
-                    // Создаем заказ для ЛЮБОГО типа книги, чтобы зафиксировать покупку
-                    // Но для физических книг статус PENDING, а для электронных можно сразу DELIVERED?
-                    // В текущем JdbcOrderRepository нет способа задать статус DELIVERED при сохранении легко,
-                    // OrderService.placeOrder ставит PENDING.
-                    
+                if (book.getBookType() == StoredBook.BookType.PHYSICAL || user.getPoints() >= 1) {
                     if (book.getBookType() == StoredBook.BookType.PHYSICAL) {
                         orderService.placeOrder(user.getId(), book.getId());
                     } else {
                         // Для электронной книги тоже создаем запись в orders, чтобы findOwnedBooksByUserId ее увидел
                         orderRepository.save(new Order(null, user.getId(), book.getId(), Order.Status.DELIVERED, java.time.LocalDateTime.now()));
+                        authService.updateCurrentUserPoints(user.getPoints() - 1);
                     }
                     
-                    authService.updateCurrentUserPoints(user.getPoints() - 1);
-                    // Обновляем пользователя в сессии
+                    // Обновляем пользователя в сессии (могли измениться поинты)
                     ctx.sessionAttribute("currentUser", authService.getCurrentUser());
                 }
             });

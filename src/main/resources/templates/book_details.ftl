@@ -48,15 +48,21 @@
 
             <div class="actions" style="display: flex; gap: 10px;">
                 <#if isOwned?? && isOwned>
-                    <a href="/book/${book.id?c}/download" class="btn btn-primary">Скачать книгу</a>
+                    <#if book.bookType == "ELECTRONIC">
+                        <a href="/book/${book.id?c}/download" class="btn btn-primary">Скачать книгу</a>
+                    <#else>
+                        <button class="btn btn-secondary" disabled>Книга заказана</button>
+                    </#if>
                 <#else>
                     <#if currentUser??>
                         <form action="/shop/buy" method="post" style="margin: 0;">
                             <input type="hidden" name="bookId" value="${book.id?c}">
-                            <button type="submit" class="btn btn-primary">Купить за 1 Pt</button>
+                            <button type="submit" class="btn btn-primary">
+                                <#if book.bookType == "PHYSICAL">Заказать книгу<#else>Купить за 1 Pt</#if>
+                            </button>
                         </form>
                     <#else>
-                        <a href="/login" class="btn btn-secondary">Войдите, чтобы купить</a>
+                        <a href="/login" class="btn btn-secondary">Войдите, чтобы <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a>
                     </#if>
                 </#if>
                 <a href="https://www.youtube.com/results?search_query=обзор+книги+${book.title?url}" target="_blank" class="btn btn-secondary">🎥 Найти обзор</a>
