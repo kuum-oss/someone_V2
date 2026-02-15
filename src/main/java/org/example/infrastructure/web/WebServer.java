@@ -287,19 +287,35 @@ public class WebServer {
         app.get("/shop", ctx -> {
             Map<String, Object> model = createModel(ctx);
             User user = ctx.sessionAttribute("currentUser");
+            
+            String selectedGenre = ctx.queryParam("genre");
+            String selectedLanguage = ctx.queryParam("language");
+            
             List<StoredBook> allPublicBooks = bookRepository.findPublicBooks();
+            
+            // Фильтрация по жанру и языку
+            List<StoredBook> filteredBooks = allPublicBooks.stream()
+                    .filter(b -> (selectedGenre == null || selectedGenre.isEmpty() || selectedGenre.equals(b.getGenre())))
+                    .filter(b -> (selectedLanguage == null || selectedLanguage.isEmpty() || selectedLanguage.equals(b.getLanguage())))
+                    .toList();
             
             if (user != null) {
                 List<StoredBook> ownedBooks = bookRepository.findOwnedBooksByUserId(user.getId());
                 List<Integer> ownedIds = ownedBooks.stream().map(StoredBook::getId).toList();
                 // Показываем в магазине только те книги, которых нет у пользователя
-                List<StoredBook> shopBooks = allPublicBooks.stream()
+                List<StoredBook> shopBooks = filteredBooks.stream()
                         .filter(b -> !ownedIds.contains(b.getId()))
                         .toList();
                 model.put("books", shopBooks);
             } else {
-                model.put("books", allPublicBooks);
+                model.put("books", filteredBooks);
             }
+            
+            model.put("genres", bookRepository.findAllGenres());
+            model.put("languages", bookRepository.findAllLanguages());
+            model.put("selectedGenre", selectedGenre);
+            model.put("selectedLanguage", selectedLanguage);
+            
             render(ctx, "templates/shop.ftl", model);
         });
 

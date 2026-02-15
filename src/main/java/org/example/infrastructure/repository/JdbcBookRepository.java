@@ -255,6 +255,38 @@ public class JdbcBookRepository implements BookRepository {
     }
 
     @Override
+    public List<String> findAllGenres() {
+        List<String> genres = new ArrayList<>();
+        String sql = "SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL AND genre != '' ORDER BY genre";
+        try (java.sql.Connection conn = org.example.infrastructure.db.DatabaseConfig.getConnection();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql);
+             java.sql.ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                genres.add(rs.getString("genre"));
+            }
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+        }
+        return genres;
+    }
+
+    @Override
+    public List<String> findAllLanguages() {
+        List<String> languages = new ArrayList<>();
+        String sql = "SELECT DISTINCT language FROM books WHERE language IS NOT NULL AND language != '' ORDER BY language";
+        try (java.sql.Connection conn = org.example.infrastructure.db.DatabaseConfig.getConnection();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql);
+             java.sql.ResultSet rs = pstmt.executeQuery()) {
+            while (rs.next()) {
+                languages.add(rs.getString("language"));
+            }
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+        }
+        return languages;
+    }
+
+    @Override
     public long getTotalStorageSize() {
         String sql = "SELECT SUM(file_size) FROM books";
         try (Connection conn = DatabaseConfig.getConnection();
