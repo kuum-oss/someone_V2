@@ -6,6 +6,7 @@ import freemarker.template.TemplateExceptionHandler;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.http.HttpStatus;
+import io.javalin.http.UploadedFile;
 import org.example.core.entity.Notification;
 import org.example.core.entity.Order;
 import org.example.core.entity.StoredBook;
@@ -379,6 +380,76 @@ public class WebServer {
                 String message = ctx.formParam("message");
                 dashboardService.addNotification(null, message);
                 ctx.redirect("/admin");
+            } else {
+                ctx.status(403);
+            }
+        });
+
+        app.get("/admin/book/edit/{id}", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                int id = Integer.parseInt(ctx.pathParam("id"));
+                bookRepository.findById(id).ifPresentOrElse(book -> {
+                    Map<String, Object> model = createModel(ctx);
+                    model.put("book", book);
+                    render(ctx, "templates/edit_book.ftl", model);
+                }, () -> ctx.status(404).result("Книга не найдена"));
+            } else {
+                ctx.status(403).result("Доступ запрещен");
+            }
+        });
+
+        app.post("/admin/book/edit", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                int id = Integer.parseInt(ctx.formParam("id"));
+                bookRepository.findById(id).ifPresent(book -> {
+                    String title = ctx.formParam("title");
+                    String author = ctx.formParam("author");
+                    String genre = ctx.formParam("genre");
+                    String language = ctx.formParam("language");
+                    String year = ctx.formParam("year");
+                    String description = ctx.formParam("description");
+                    String bookTypeStr = ctx.formParam("bookType");
+                    StoredBook.BookType bookType = StoredBook.BookType.valueOf(bookTypeStr);
+
+                    UploadedFile coverFile = ctx.uploadedFile("coverFile");
+                    byte[] coverBytes = book.getCover();
+                    if (coverFile != null && coverFile.size() > 0) {
+                        try {
+                            coverBytes = coverFile.content().readAllBytes();
+                        } catch (Exception e) {
+                            LOGGER.error("Error reading uploaded cover", e);
+                        }
+                    }
+
+                    StoredBook updatedBook = StoredBook.builder()
+                            .id(book.getId())
+                            .userId(book.getUserId())
+                            .title(title)
+                            .author(author)
+                            .genre(genre)
+                            .language(language)
+                            .year(year)
+                            .description(description)
+                            .bookType(bookType)
+                            .cover(coverBytes)
+                            // Сохраняем остальные поля
+                            .filePath(book.getFilePath())
+                            .originalName(book.getOriginalName())
+                            .fileSize(book.getFileSize())
+                            .fileContent(book.getFileContent())
+                            .isPublic(book.isPublic())
+                            .isAvailable(book.isAvailable())
+                            .series(book.getSeries())
+                            .seriesIndex(book.getSeriesIndex())
+                            .authorPhoto(book.getAuthorPhoto())
+                            .format(book.getFormat())
+                            .build();
+
+                    bookRepository.update(updatedBook);
+                });
+                ctx.redirect("/shop");
             } else {
                 ctx.status(403);
             }

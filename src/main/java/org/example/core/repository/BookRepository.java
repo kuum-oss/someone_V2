@@ -20,4 +20,5 @@ public interface BookRepository {
     List<String> findAllLanguages();
     long getTotalStorageSize();
     long getTotalBookCount();
+    void update(StoredBook book);
 }

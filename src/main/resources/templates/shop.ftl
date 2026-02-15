@@ -89,6 +89,9 @@
                     </div>
 
                     <div style="margin-top: 10px;">
+                        <#if currentUser?? && currentUser.admin>
+                            <a href="/admin/book/edit/${book.id?c}" class="cta" style="background: var(--primary-color); margin-bottom: 5px;">Редактировать</a>
+                        </#if>
                         <#if ownedIds?? && ownedIds?seq_contains(book.id)>
                             <button class="cta" style="background: var(--success-color); cursor: default;" disabled>Уже куплено</button>
                         <#elseif currentUser??>

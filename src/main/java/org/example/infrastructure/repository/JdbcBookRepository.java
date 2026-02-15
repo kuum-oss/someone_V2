@@ -75,6 +75,35 @@ public class JdbcBookRepository implements BookRepository {
     }
 
     @Override
+    public void update(StoredBook book) {
+        String sql = "UPDATE books SET title = ?, author = ?, genre = ?, year = ?, series = ?, series_index = ?, language = ?, description = ?, cover = ?, author_photo = ?, is_public = ?, book_type = ?, is_available = ? WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, book.getTitle());
+            ps.setString(2, book.getAuthor());
+            ps.setString(3, book.getGenre());
+            ps.setString(4, book.getYear());
+            ps.setString(5, book.getSeries());
+            if (book.getSeriesIndex() != null) {
+                ps.setInt(6, book.getSeriesIndex());
+            } else {
+                ps.setNull(6, Types.INTEGER);
+            }
+            ps.setString(7, book.getLanguage());
+            ps.setString(8, book.getDescription());
+            ps.setBytes(9, book.getCover());
+            ps.setBytes(10, book.getAuthorPhoto());
+            ps.setBoolean(11, book.isPublic());
+            ps.setString(12, book.getBookType().name());
+            ps.setBoolean(13, book.isAvailable());
+            ps.setInt(14, book.getId());
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error updating book: " + e.getMessage(), e);
+        }
+    }
+
+    @Override
     public List<StoredBook> findByUserId(Integer userId) {
         List<StoredBook> books = new ArrayList<>();
         String sql = "SELECT * FROM books WHERE user_id = ? AND is_public = FALSE";
