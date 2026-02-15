@@ -62,49 +62,53 @@
     <div class="catalog">
         <#if books?has_content>
             <#list books as book>
-                <div class="book-card">
-                    <div class="book-cover">
-                        <#if book.cover??>
-                            <img src="/book/${book.id?c}/cover" alt="${book.title}">
-                        <#else>
-                            Нет обложки
-                        </#if>
-                    </div>
+                <div class="book-card-wrapper" style="position: relative; display: flex;">
+                    <a href="/book/${book.id?c}" class="book-card" style="flex: 1;">
+                        <div class="book-cover">
+                            <#if book.cover??>
+                                <img src="/book/${book.id?c}/cover" alt="${book.title}">
+                            <#else>
+                                Нет обложки
+                            </#if>
+                        </div>
 
-                    <span class="badge ${book.bookType?lower_case}">${book.bookType}</span>
+                        <span class="badge ${book.bookType?lower_case}">${book.bookType}</span>
 
-                    <h3 class="book-title">${book.title}</h3>
-                    <p class="book-author">${book.author!"Автор не указан"}</p>
-                    <div style="font-size: 12px; color: var(--secondary-color); margin-top: 4px;">
-                        <span>${book.genre!"Без жанра"}</span> • <span>${book.language!"Неизвестен"}</span>
-                    </div>
+                        <h3 class="book-title">${book.title}</h3>
+                        <p class="book-author">${book.author!"Автор не указан"}</p>
+                        <div style="font-size: 12px; color: var(--secondary-color); margin-top: 4px;">
+                            <span>${book.genre!"Без жанра"}</span> • <span>${book.language!"Неизвестен"}</span>
+                        </div>
 
-                    <div class="price-row">
-                        <#if book.bookType == "ELECTRONIC">
-                            <div class="price">1 поинт</div>
-                        <#else>
-                            <div class="price free">Бесплатно</div>
-                        </#if>
-                        <div class="status">Доступна</div>
-                    </div>
+                        <div class="price-row">
+                            <#if book.bookType == "ELECTRONIC">
+                                <div class="price">1 поинт</div>
+                            <#else>
+                                <div class="price free">Бесплатно</div>
+                            </#if>
+                            <div class="status">Доступна</div>
+                        </div>
 
-                    <div style="margin-top: 10px;">
-                        <#if currentUser?? && currentUser.admin>
-                            <a href="/admin/book/edit/${book.id?c}" class="cta" style="background: var(--primary-color); margin-bottom: 5px;">Редактировать</a>
-                        </#if>
-                        <#if ownedIds?? && ownedIds?seq_contains(book.id)>
-                            <button class="cta" style="background: var(--success-color); cursor: default;" disabled>Уже куплено</button>
-                        <#elseif currentUser??>
-                            <form action="/shop/buy" method="POST" style="margin: 0;">
-                                <input type="hidden" name="bookId" value="${book.id?c}">
-                                <button type="submit" class="cta">
-                                    <#if book.bookType == "PHYSICAL">Заказать<#else>Купить</#if>
-                                </button>
-                            </form>
-                        <#else>
-                            <a href="/login" class="cta">Войдите, чтобы <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a>
-                        </#if>
-                    </div>
+                        <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;">
+                            <#if currentUser?? && currentUser.admin>
+                                <object><a href="/admin/book/edit/${book.id?c}" class="cta" style="background: var(--primary-color);">Редактировать</a></object>
+                            </#if>
+                            <#if ownedIds?? && ownedIds?seq_contains(book.id)>
+                                <button class="cta" style="background: var(--success-color); cursor: default;" disabled>Уже куплено</button>
+                            <#elseif currentUser??>
+                                <object>
+                                    <form action="/shop/buy" method="POST" style="margin: 0;">
+                                        <input type="hidden" name="bookId" value="${book.id?c}">
+                                        <button type="submit" class="cta">
+                                            <#if book.bookType == "PHYSICAL">Заказать<#else>Купить</#if>
+                                        </button>
+                                    </form>
+                                </object>
+                            <#else>
+                                <object><a href="/login" class="cta">Войти и <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a></object>
+                            </#if>
+                        </div>
+                    </a>
                 </div>
             </#list>
         <#else>

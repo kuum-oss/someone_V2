@@ -59,14 +59,16 @@
                     </#if>
                 <#else>
                     <#if currentUser??>
-                        <form action="/shop/buy" method="post" style="margin: 0;">
-                            <input type="hidden" name="bookId" value="${book.id?c}">
-                            <button type="submit" class="btn btn-primary">
-                                <#if book.bookType == "PHYSICAL">Заказать книгу<#else>Купить за 1 поинт</#if>
-                            </button>
-                        </form>
+                        <object>
+                            <form action="/shop/buy" method="post" style="margin: 0;">
+                                <input type="hidden" name="bookId" value="${book.id?c}">
+                                <button type="submit" class="btn btn-primary">
+                                    <#if book.bookType == "PHYSICAL">Заказать книгу<#else>Купить за 1 поинт</#if>
+                                </button>
+                            </form>
+                        </object>
                     <#else>
-                        <a href="/login" class="btn btn-secondary">Войдите, чтобы <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a>
+                        <object><a href="/login" class="btn btn-primary">Войти и <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a></object>
                     </#if>
                 </#if>
                 <a href="https://www.youtube.com/results?search_query=обзор+книги+${book.title?url}" target="_blank" class="btn btn-secondary">🎥 Найти обзор</a>

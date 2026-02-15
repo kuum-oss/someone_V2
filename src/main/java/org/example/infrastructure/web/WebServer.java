@@ -431,14 +431,14 @@ public class WebServer {
                             .genre(genre)
                             .language(language)
                             .year(year)
-                            .description(description)
+                            .description((description != null && !description.isBlank()) ? description : book.getDescription())
                             .bookType(bookType)
                             .cover(coverBytes)
                             // Сохраняем остальные поля
                             .filePath(book.getFilePath())
                             .originalName(book.getOriginalName())
                             .fileSize(book.getFileSize())
-                            .fileContent(book.getFileContent())
+                            .fileContent(bookRepository.getBookContent(book.getId()))
                             .isPublic(book.isPublic())
                             .isAvailable(book.isAvailable())
                             .series(book.getSeries())
@@ -446,6 +446,11 @@ public class WebServer {
                             .authorPhoto(book.getAuthorPhoto())
                             .format(book.getFormat())
                             .build();
+
+                    LOGGER.info("Updating book id={}: title={}, description length={}, cover length={}", 
+                        id, updatedBook.getTitle(), 
+                        updatedBook.getDescription() != null ? updatedBook.getDescription().length() : "null",
+                        updatedBook.getCover() != null ? updatedBook.getCover().length : "null");
 
                     bookRepository.update(updatedBook);
                 });

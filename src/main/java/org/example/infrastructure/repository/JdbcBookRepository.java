@@ -76,7 +76,7 @@ public class JdbcBookRepository implements BookRepository {
 
     @Override
     public void update(StoredBook book) {
-        String sql = "UPDATE books SET title = ?, author = ?, genre = ?, year = ?, series = ?, series_index = ?, language = ?, description = ?, cover = ?, author_photo = ?, is_public = ?, book_type = ?, is_available = ? WHERE id = ?";
+        String sql = "UPDATE books SET title = ?, author = ?, genre = ?, year = ?, series = ?, series_index = ?, language = ?, description = ?, cover = ?, author_photo = ?, is_public = ?, book_type = ?, is_available = ?, file_content = ? WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, book.getTitle());
@@ -96,8 +96,15 @@ public class JdbcBookRepository implements BookRepository {
             ps.setBoolean(11, book.isPublic());
             ps.setString(12, book.getBookType().name());
             ps.setBoolean(13, book.isAvailable());
-            ps.setInt(14, book.getId());
-            ps.executeUpdate();
+            ps.setBytes(14, book.getFileContent());
+            ps.setInt(15, book.getId());
+            
+            int rows = ps.executeUpdate();
+            if (rows == 0) {
+                System.err.println("[DEBUG_LOG] No rows updated for book id: " + book.getId());
+            } else {
+                System.err.println("[DEBUG_LOG] Updated book id: " + book.getId() + ", rows affected: " + rows);
+            }
         } catch (SQLException e) {
             throw new RuntimeException("Error updating book: " + e.getMessage(), e);
         }
