@@ -166,16 +166,14 @@ public class WebServer {
     private void setupRoutes() {
         // Главная страница
         app.get("/", ctx -> {
-            Map<String, Object> model = createModel(ctx);
             User user = ctx.sessionAttribute("currentUser");
-            List<StoredBook> books;
-            if (user != null) {
-                // В библиотеке только купленные книги (или загруженные самим пользователем)
-                books = bookRepository.findOwnedBooksByUserId(user.getId());
-            } else {
-                // Если не залогинен, показываем публичные книги (или ничего)
-                books = bookRepository.findPublicBooks();
+            if (user == null) {
+                ctx.redirect("/shop");
+                return;
             }
+            Map<String, Object> model = createModel(ctx);
+            // В библиотеке только купленные книги (или загруженные самим пользователем)
+            List<StoredBook> books = bookRepository.findOwnedBooksByUserId(user.getId());
             model.put("books", books);
             render(ctx, "templates/library.ftl", model);
         });

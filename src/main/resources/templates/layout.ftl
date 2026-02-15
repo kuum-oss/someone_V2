@@ -148,8 +148,12 @@
             <a href="/" class="logo">📚 Smart Organizer</a>
             <nav>
                 <ul>
-                    <li><a href="/">Библиотека</a></li>
-                    <li><a href="/shop">Магазин</a></li>
+                    <#if currentUser??>
+                        <li><a href="/">Библиотека</a></li>
+                        <li><a href="/shop">Магазин</a></li>
+                    <#else>
+                        <li><a href="/shop">Магазин</a></li>
+                    </#if>
                     <#if currentUser?? && currentUser.admin>
                         <li><a href="/admin">Админка</a></li>
                     </#if>
