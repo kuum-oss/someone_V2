@@ -14,6 +14,8 @@ public interface BookRepository {
     void deleteById(Integer id);
     List<StoredBook> findByType(StoredBook.BookType type);
     List<StoredBook> findOwnedBooksByUserId(Integer userId);
+    List<StoredBook> findPublicBooks(String query, String genre, String language, String sort, int offset, int limit);
+    long countPublicBooks(String query, String genre, String language);
     List<String> findAllGenres();
     List<String> findAllLanguages();
     long getTotalStorageSize();

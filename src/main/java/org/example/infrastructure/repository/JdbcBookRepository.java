@@ -255,6 +255,92 @@ public class JdbcBookRepository implements BookRepository {
     }
 
     @Override
+    public List<StoredBook> findPublicBooks(String query, String genre, String language, String sort, int offset, int limit) {
+        List<StoredBook> books = new ArrayList<>();
+        StringBuilder sql = new StringBuilder("SELECT * FROM books WHERE is_public = true");
+        List<Object> params = new ArrayList<>();
+
+        if (query != null && !query.isBlank()) {
+            sql.append(" AND (LOWER(title) LIKE LOWER(?) OR LOWER(author) LIKE LOWER(?))");
+            params.add("%" + query.trim() + "%");
+            params.add("%" + query.trim() + "%");
+        }
+        if (genre != null && !genre.isBlank()) {
+            sql.append(" AND genre = ?");
+            params.add(genre);
+        }
+        if (language != null && !language.isBlank()) {
+            sql.append(" AND language = ?");
+            params.add(language);
+        }
+
+        if (sort != null) {
+            switch (sort) {
+                case "title" -> sql.append(" ORDER BY title ASC");
+                case "author" -> sql.append(" ORDER BY author ASC");
+                case "newest" -> sql.append(" ORDER BY id DESC");
+                default -> sql.append(" ORDER BY title ASC");
+            }
+        } else {
+            sql.append(" ORDER BY title ASC");
+        }
+
+        sql.append(" LIMIT ? OFFSET ?");
+        params.add(limit);
+        params.add(offset);
+
+        try (java.sql.Connection conn = org.example.infrastructure.db.DatabaseConfig.getConnection();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                while (rs.next()) {
+                    books.add(mapResultSetToStoredBook(rs, false));
+                }
+            }
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+        }
+        return books;
+    }
+
+    @Override
+    public long countPublicBooks(String query, String genre, String language) {
+        StringBuilder sql = new StringBuilder("SELECT COUNT(*) FROM books WHERE is_public = true");
+        List<Object> params = new ArrayList<>();
+
+        if (query != null && !query.isBlank()) {
+            sql.append(" AND (LOWER(title) LIKE LOWER(?) OR LOWER(author) LIKE LOWER(?))");
+            params.add("%" + query.trim() + "%");
+            params.add("%" + query.trim() + "%");
+        }
+        if (genre != null && !genre.isBlank()) {
+            sql.append(" AND genre = ?");
+            params.add(genre);
+        }
+        if (language != null && !language.isBlank()) {
+            sql.append(" AND language = ?");
+            params.add(language);
+        }
+
+        try (java.sql.Connection conn = org.example.infrastructure.db.DatabaseConfig.getConnection();
+             java.sql.PreparedStatement pstmt = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                pstmt.setObject(i + 1, params.get(i));
+            }
+            try (java.sql.ResultSet rs = pstmt.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getLong(1);
+                }
+            }
+        } catch (java.sql.SQLException e) {
+            e.printStackTrace();
+        }
+        return 0;
+    }
+
+    @Override
     public List<String> findAllGenres() {
         List<String> genres = new ArrayList<>();
         String sql = "SELECT DISTINCT genre FROM books WHERE genre IS NOT NULL AND genre != '' ORDER BY genre";

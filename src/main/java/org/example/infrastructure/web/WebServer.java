@@ -286,33 +286,35 @@ public class WebServer {
             Map<String, Object> model = createModel(ctx);
             User user = ctx.sessionAttribute("currentUser");
             
+            String query = ctx.queryParam("q");
             String selectedGenre = ctx.queryParam("genre");
             String selectedLanguage = ctx.queryParam("language");
+            String sort = ctx.queryParam("sort");
+            int page = ctx.queryParamAsClass("page", Integer.class).getOrDefault(1);
+            int pageSize = 12;
+            int offset = (page - 1) * pageSize;
             
-            List<StoredBook> allPublicBooks = bookRepository.findPublicBooks();
-            
-            // Фильтрация по жанру и языку
-            List<StoredBook> filteredBooks = allPublicBooks.stream()
-                    .filter(b -> (selectedGenre == null || selectedGenre.isEmpty() || selectedGenre.equals(b.getGenre())))
-                    .filter(b -> (selectedLanguage == null || selectedLanguage.isEmpty() || selectedLanguage.equals(b.getLanguage())))
-                    .toList();
+            List<StoredBook> publicBooks = bookRepository.findPublicBooks(query, selectedGenre, selectedLanguage, sort, offset, pageSize);
+            long totalBooks = bookRepository.countPublicBooks(query, selectedGenre, selectedLanguage);
+            int totalPages = (int) Math.ceil((double) totalBooks / pageSize);
             
             if (user != null) {
                 List<StoredBook> ownedBooks = bookRepository.findOwnedBooksByUserId(user.getId());
                 List<Integer> ownedIds = ownedBooks.stream().map(StoredBook::getId).toList();
-                // Показываем в магазине только те книги, которых нет у пользователя
-                List<StoredBook> shopBooks = filteredBooks.stream()
-                        .filter(b -> !ownedIds.contains(b.getId()))
-                        .toList();
-                model.put("books", shopBooks);
-            } else {
-                model.put("books", filteredBooks);
+                // Помечаем книги, которые уже есть у пользователя
+                model.put("ownedIds", ownedIds);
             }
             
+            model.put("books", publicBooks);
             model.put("genres", bookRepository.findAllGenres());
             model.put("languages", bookRepository.findAllLanguages());
+            model.put("query", query);
             model.put("selectedGenre", selectedGenre);
             model.put("selectedLanguage", selectedLanguage);
+            model.put("sort", sort);
+            model.put("currentPage", page);
+            model.put("totalPages", totalPages);
+            model.put("totalBooks", totalBooks);
             
             render(ctx, "templates/shop.ftl", model);
         });
