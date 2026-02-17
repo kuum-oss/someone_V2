@@ -318,6 +318,20 @@ public class WebServer {
                 ctx.redirect("/admin");
             }else ctx.status(403);
         });
+        // --- Пополнение баллов (Тест) ---
+        app.post("/user/add-point", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null) {
+                int newPoints = user.getPoints() + 1;
+                userRepository.updatePoints(user.getId(), newPoints);
+                user.setPoints(newPoints);
+                ctx.sessionAttribute("currentUser", user);
+
+                ctx.redirect(ctx.header("Referer") != null ? ctx.header("Referer") : "/");
+            } else {
+                ctx.redirect("/login");
+            }
+        });
 
         // --- Глобальный обработчик ошибок ---
         app.exception(Exception.class,(e,ctx)->{
