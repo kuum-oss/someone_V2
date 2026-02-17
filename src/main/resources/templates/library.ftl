@@ -8,7 +8,7 @@
                 Книг в библиотеке: ${books?size}
             </div>
         </div>
-        
+
         <div class="filters-container" style="background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem;">
             <div class="filter-group" style="flex: 2; min-width: 200px;">
                 <label for="searchInput" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Поиск</label>

@@ -1,78 +1,206 @@
 <#import "layout.ftl" as layout>
 
 <@layout.main_layout title=book.title>
-    <div class="book-details-container" style="display: flex; gap: 40px; align-items: flex-start;">
-        <div class="book-cover-large" style="flex: 0 0 300px;">
-            <div class="book-cover" style="height: 400px; width: 300px; font-size: 18px;">
+    <style>
+        /* 1. Сетка страницы */
+        .book-page-grid {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 48px;
+            /* Важно: отступ сверху, чтобы контент не нырял под шапку */
+            padding-top: 20px;
+            align-items: start;
+        }
+
+        /* 2. Левая колонка (Обложка) */
+        .book-sticky-side {
+            position: sticky;
+            top: 100px; /* Фиксируем обложку при скролле */
+        }
+
+        .book-visual {
+            width: 100%;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.1);
+            background: #fff;
+            line-height: 0;
+        }
+
+        .book-visual img {
+            width: 100%;
+            height: auto;
+            display: block;
+            transition: transform 0.5s ease;
+        }
+
+        .book-visual:hover img {
+            transform: scale(1.03);
+        }
+
+        /* 3. Правая колонка (Инфо) */
+        .book-main-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .book-header-group {
+            margin-bottom: 32px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 24px;
+        }
+
+        .book-header-group h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            margin: 0 0 8px 0;
+            color: var(--primary-color);
+            line-height: 1.1;
+        }
+
+        .book-author-link {
+            font-size: 1.25rem;
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        /* 4. Блок характеристик (вместо таблицы) */
+        .specs-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .spec-tag {
+            background: #fff;
+            border: 1px solid var(--border-color);
+            padding: 8px 16px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            min-width: 120px;
+        }
+
+        .spec-tag .label {
+            font-size: 0.75rem;
+            color: #94a3b8;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 2px;
+        }
+
+        .spec-tag .value {
+            font-weight: 600;
+            font-size: 0.95rem;
+            color: var(--primary-color);
+        }
+
+        /* 5. Описание */
+        .book-description {
+            font-size: 1.1rem;
+            line-height: 1.7;
+            color: #334155;
+            margin-bottom: 40px;
+            max-width: 800px;
+        }
+
+        /* 6. Кнопки действий */
+        .book-actions {
+            display: flex;
+            gap: 16px;
+            background: #fff;
+            padding: 20px;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+            box-shadow: var(--shadow-sm);
+            width: fit-content;
+        }
+
+        /* Мобильная адаптация */
+        @media (max-width: 900px) {
+            .book-page-grid {
+                grid-template-columns: 1fr;
+                gap: 32px;
+            }
+            .book-sticky-side {
+                position: static;
+                max-width: 280px;
+                margin: 0 auto;
+            }
+            .book-header-group { text-align: center; }
+            .book-actions { width: 100%; flex-direction: column; }
+        }
+    </style>
+
+    <div class="book-page-grid">
+        <aside class="book-sticky-side">
+            <div class="book-visual">
                 <#if book.cover??>
-                    <img src="/book/${book.id?c}/cover" alt="${book.title}" style="border-radius: 8px; box-shadow: 0 4px 20px rgba(0,0,0,0.2);">
+                    <img src="/book/${book.id?c}/cover" alt="${book.title}">
                 <#else>
-                    Нет обложки
+                    <div style="padding: 100px 20px; text-align: center; color: #94a3b8; font-weight: 600;">
+                        📖 Обложка отсутствует
+                    </div>
                 </#if>
             </div>
-        </div>
-        
-        <div class="book-info-main" style="flex: 1;">
-            <h1 style="margin-top: 0;">${book.title}</h1>
-            <p style="font-size: 1.2rem; color: #666; margin-bottom: 2rem;">${book.author!"Неизвестный автор"}</p>
-            
-            <div class="card" style="margin-bottom: 2rem;">
-                <table style="width: 100%; border-collapse: collapse;">
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px 0; color: #888;">Жанр:</td>
-                        <td style="padding: 10px 0;">${book.genre!"-"}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px 0; color: #888;">Год издания:</td>
-                        <td style="padding: 10px 0;">${book.year!"-"}</td>
-                    </tr>
-                    <tr style="border-bottom: 1px solid #eee;">
-                        <td style="padding: 10px 0; color: #888;">Язык:</td>
-                        <td style="padding: 10px 0;">${book.language!"-"}</td>
-                    </tr>
-                    <#if book.series??>
-                        <tr style="border-bottom: 1px solid #eee;">
-                            <td style="padding: 10px 0; color: #888;">Серия:</td>
-                            <td style="padding: 10px 0;">${book.series} <#if book.seriesIndex??>#${book.seriesIndex}</#if></td>
-                        </tr>
-                    </#if>
-                    <tr>
-                        <td style="padding: 10px 0; color: #888;">Тип:</td>
-                        <td style="padding: 10px 0;">
-                            <span class="badge ${book.bookType?lower_case}">${book.bookType}</span>
-                        </td>
-                    </tr>
-                </table>
+        </aside>
+
+        <main class="book-main-info">
+            <div class="book-header-group">
+                <h1>${book.title}</h1>
+                <span class="book-author-link">${book.author!"Неизвестный автор"}</span>
             </div>
 
-            <h3>Описание</h3>
-            <div class="description" style="line-height: 1.6; color: #444; margin-bottom: 2rem;">
-                ${book.description!"Описание отсутствует."}
+            <div class="specs-list">
+                <div class="spec-tag">
+                    <span class="label">Жанр</span>
+                    <span class="value">${book.genre!"—"}</span>
+                </div>
+                <div class="spec-tag">
+                    <span class="label">Год</span>
+                    <span class="value">${book.year!"—"}</span>
+                </div>
+                <div class="spec-tag">
+                    <span class="label">Тип</span>
+                    <span class="badge ${book.bookType?lower_case}" style="margin-top: 4px;">${book.bookType}</span>
+                </div>
+                <#if book.series??>
+                    <div class="spec-tag">
+                        <span class="label">Серия</span>
+                        <span class="value">${book.series} <#if book.seriesIndex??>#${book.seriesIndex}</#if></span>
+                    </div>
+                </#if>
             </div>
 
-            <div class="actions" style="display: flex; gap: 10px;">
+            <article class="book-description">
+                <h3 style="margin-bottom: 12px; font-size: 1.25rem;">О чем эта книга</h3>
+                ${book.description!"Описание в процессе добавления..."}
+            </article>
+
+            <div class="book-actions">
                 <#if isOwned?? && isOwned>
                     <#if book.bookType == "ELECTRONIC">
-                        <a href="/book/${book.id?c}/download" class="btn btn-primary">Скачать книгу</a>
+                        <a href="/book/${book.id?c}/download" class="btn btn-primary" style="padding: 14px 28px;">📥 Скачать книгу</a>
                     <#else>
-                        <button class="btn btn-secondary" disabled>Книга заказана</button>
+                        <span class="btn btn-secondary" style="cursor: default; opacity: 0.7;">📦 Книга уже заказана</span>
                     </#if>
                 <#else>
                     <#if currentUser??>
-                        <object>
-                            <form action="/shop/buy" method="post" style="margin: 0;">
-                                <input type="hidden" name="bookId" value="${book.id?c}">
-                                <button type="submit" class="btn btn-primary">
-                                    <#if book.bookType == "PHYSICAL">Заказать книгу<#else>Купить за 1 поинт</#if>
-                                </button>
-                            </form>
-                        </object>
+                        <form action="/shop/buy" method="post" style="margin: 0;">
+                            <input type="hidden" name="bookId" value="${book.id?c}">
+                            <button type="submit" class="btn btn-primary" style="padding: 14px 28px;">
+                                <#if book.bookType == "PHYSICAL">🛒 Заказать за 1 поинт<#else>💎 Купить за 1 поинт</#if>
+                            </button>
+                        </form>
                     <#else>
-                        <object><a href="/login" class="btn btn-primary">Войти и <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a></object>
+                        <a href="/login" class="btn btn-primary" style="padding: 14px 28px;">🔐 Войти для покупки</a>
                     </#if>
                 </#if>
-                <a href="https://www.youtube.com/results?search_query=обзор+книги+${book.title?url}" target="_blank" class="btn btn-secondary">🎥 Найти обзор</a>
+                <a href="https://www.youtube.com/results?search_query=обзор+книги+${book.title?url}"
+                   target="_blank" class="btn btn-secondary" style="padding: 14px 24px;">🎥 Посмотреть обзор</a>
             </div>
-        </div>
+        </main>
     </div>
 </@layout.main_layout>
