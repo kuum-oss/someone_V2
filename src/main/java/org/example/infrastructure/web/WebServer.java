@@ -311,6 +311,45 @@ public class WebServer {
             }else ctx.status(403);
         });
 
+        app.get("/admin/book/edit/{id}", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                int id = Integer.parseInt(ctx.pathParam("id"));
+                bookRepository.findById(id).ifPresentOrElse(book -> {
+                    Map<String, Object> model = createModel(ctx);
+                    model.put("book", book);
+                    render(ctx, "templates/edit_book.ftl", model);
+                }, () -> ctx.status(404).result("Книга не найдена"));
+            } else ctx.status(403);
+        });
+
+        app.post("/admin/book/edit", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                int id = Integer.parseInt(ctx.formParam("id"));
+                bookRepository.findById(id).ifPresent(book -> {
+                    book.setTitle(ctx.formParam("title"));
+                    book.setAuthor(ctx.formParam("author"));
+                    book.setGenre(ctx.formParam("genre"));
+                    book.setLanguage(ctx.formParam("language"));
+                    book.setYear(ctx.formParam("year"));
+                    book.setDescription(ctx.formParam("description"));
+                    book.setBookType(StoredBook.BookType.valueOf(ctx.formParam("bookType")));
+
+                    UploadedFile file = ctx.uploadedFile("coverFile");
+                    if (file != null && file.size() > 0) {
+                        try {
+                            book.setCover(file.content().readAllBytes());
+                        } catch (Exception e) {
+                            LOGGER.error("Error reading uploaded cover", e);
+                        }
+                    }
+                    bookRepository.update(book);
+                });
+                ctx.redirect("/shop");
+            } else ctx.status(403);
+        });
+
         app.post("/admin/add-notification", ctx -> {
             User user = ctx.sessionAttribute("currentUser");
             if(user!=null && user.isAdmin()){

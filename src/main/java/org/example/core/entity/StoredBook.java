@@ -145,4 +145,13 @@ public class StoredBook {
     public BookType getBookType() { return bookType; }
     public boolean isAvailable() { return isAvailable; }
     public void setAvailable(boolean available) { isAvailable = available; }
+
+    public void setTitle(String title) { this.title = title; }
+    public void setAuthor(String author) { this.author = author; }
+    public void setGenre(String genre) { this.genre = genre; }
+    public void setLanguage(String language) { this.language = language; }
+    public void setYear(String year) { this.year = year; }
+    public void setDescription(String description) { this.description = description; }
+    public void setBookType(BookType bookType) { this.bookType = bookType; }
+    public void setCover(byte[] cover) { this.cover = cover; }
 }
