@@ -5,8 +5,15 @@ import freemarker.template.Template;
 import freemarker.template.TemplateExceptionHandler;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.http.HandlerType;
 import io.javalin.http.HttpStatus;
 import io.javalin.http.UploadedFile;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.example.core.entity.Notification;
 import org.example.core.entity.Order;
 import org.example.core.entity.StoredBook;
@@ -42,8 +49,14 @@ public class WebServer {
 
     private final Map<String, Long> requestCounts = new java.util.concurrent.ConcurrentHashMap<>();
     private final Map<String, Long> lastRequestTime = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Integer> abusePoints = new java.util.concurrent.ConcurrentHashMap<>();
+    private final Map<String, Long> blockedIps = new java.util.concurrent.ConcurrentHashMap<>();
+
     private static final int MAX_REQUESTS_PER_MINUTE = 60;
     private static final long MIN_INTERVAL_MS = 100;
+    private static final int MAX_ABUSE_POINTS = 5;
+    private static final long BLOCK_DURATION_MS = 300_000; // 5 minutes
+    private static final long MAX_BODY_SIZE = 1_000_000; // 1MB
 
     public WebServer() {
         this.bookRepository = new JdbcBookRepository();
@@ -67,30 +80,49 @@ public class WebServer {
         this.freeMarkerCfg.setFallbackOnNullLoopVariable(false);
     }
 
-    public int start(int port) {
+    public int start(int finalPort) {
         try {
             app = Javalin.create(config -> {
                 config.staticFiles.add("/public");
                 config.showJavalinBanner = false;
+
+                // Jetty Server hardening
+                config.jetty.modifyServer(server -> {
+                    QueuedThreadPool threadPool = new QueuedThreadPool(50, 4, 60000);
+                    server.setAttribute("threadPool", threadPool); // Just in case, though it's hard to replace after creation
+
+                    HttpConfiguration httpConfig = new HttpConfiguration();
+                    httpConfig.setSendServerVersion(false);
+                    httpConfig.setSendDateHeader(false);
+                    httpConfig.setRequestHeaderSize(8192);
+                    httpConfig.setResponseHeaderSize(8192);
+
+                    ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
+                    connector.setPort(finalPort);
+                    connector.setIdleTimeout(30000); // 30 seconds idle timeout to prevent Slowloris
+                    connector.setAcceptQueueSize(100);
+
+                    server.setConnectors(new Connector[]{connector});
+                });
             });
 
             setupSecurity();
             setupRoutes();
 
             try {
-                app.start(port);
+                app.start(finalPort);
             } catch (Exception e) {
                 if (e.getMessage() != null && e.getMessage().contains("Address already in use")) {
-                    LOGGER.warn("Port {} is busy, trying to find an available port...", port);
+                    LOGGER.warn("Port {} is busy, trying to find an available port...", finalPort);
                     app.start(0);
-                    port = app.port();
+                    return app.port();
                 } else {
                     throw e;
                 }
             }
 
-            LOGGER.info("Web server started successfully at http://localhost:{}", port);
-            return port;
+            LOGGER.info("Web server started successfully at http://localhost:{}", app.port());
+            return app.port();
         } catch (Exception e) {
             LOGGER.error("Failed to start web server", e);
             throw new RuntimeException("Web server failed to start", e);
@@ -98,13 +130,40 @@ public class WebServer {
     }
 
     private void setupSecurity() {
+        // IP Blocking check
+        app.before(ctx -> {
+            String ip = ctx.ip();
+            Long blockUntil = blockedIps.get(ip);
+            if (blockUntil != null) {
+                if (System.currentTimeMillis() < blockUntil) {
+                    ctx.status(HttpStatus.FORBIDDEN).result("Your IP is temporarily blocked due to suspicious activity.");
+                    return;
+                } else {
+                    blockedIps.remove(ip);
+                    abusePoints.remove(ip);
+                }
+            }
+        });
+
+        // Global Max Body Size Limit
+        app.before(ctx -> {
+            if (ctx.contentLength() > MAX_BODY_SIZE) {
+                ctx.status(HttpStatus.CONTENT_TOO_LARGE).result("Request body too large.");
+                return;
+            }
+        });
+
         // Rate limiting
         app.before(ctx -> {
             String ip = ctx.ip();
             long now = System.currentTimeMillis();
 
+            // Check if already handled by IP block
+            if (ctx.status() == HttpStatus.FORBIDDEN) return;
+
             Long lastTime = lastRequestTime.get(ip);
             if (lastTime != null && (now - lastTime) < MIN_INTERVAL_MS) {
+                handleAbuse(ip);
                 ctx.status(HttpStatus.TOO_MANY_REQUESTS).result(messages.getString("error.too_many_requests"));
                 return;
             }
@@ -114,21 +173,14 @@ public class WebServer {
             String key = ip + ":" + minute;
             long count = requestCounts.compute(key, (k, v) -> v == null ? 1L : v + 1L);
             if (count > MAX_REQUESTS_PER_MINUTE) {
+                handleAbuse(ip);
                 ctx.status(HttpStatus.TOO_MANY_REQUESTS).result(messages.getString("error.too_many_requests"));
                 return;
             }
 
-            // Cleanup old data
-            if (requestCounts.size() > 1000) {
-                requestCounts.entrySet().removeIf(entry -> {
-                    String[] parts = entry.getKey().split(":");
-                    try {
-                        return Long.parseLong(parts[1]) < minute;
-                    } catch (Exception e) {
-                        return true;
-                    }
-                });
-                lastRequestTime.entrySet().removeIf(entry -> (now - entry.getValue()) > 60000);
+            // Cleanup old data periodically
+            if (requestCounts.size() > 2000) {
+                cleanupSecurityData(minute, now);
             }
         });
 
@@ -143,7 +195,7 @@ public class WebServer {
 
         // CSRF check
         app.before(ctx -> {
-            if ("POST".equals(ctx.method())) {
+            if (ctx.method() == HandlerType.POST) {
                 String referer = ctx.header("Referer");
                 String host = ctx.header("Host");
                 if (referer != null && host != null && !referer.contains(host)) {
@@ -151,6 +203,27 @@ public class WebServer {
                 }
             }
         });
+    }
+
+    private void handleAbuse(String ip) {
+        int points = abusePoints.compute(ip, (k, v) -> v == null ? 1 : v + 1);
+        if (points >= MAX_ABUSE_POINTS) {
+            LOGGER.warn("IP {} blocked for {} ms due to abuse points: {}", ip, BLOCK_DURATION_MS, points);
+            blockedIps.put(ip, System.currentTimeMillis() + BLOCK_DURATION_MS);
+        }
+    }
+
+    private void cleanupSecurityData(long currentMinute, long now) {
+        requestCounts.entrySet().removeIf(entry -> {
+            String[] parts = entry.getKey().split(":");
+            try {
+                return Long.parseLong(parts[1]) < currentMinute;
+            } catch (Exception e) {
+                return true;
+            }
+        });
+        lastRequestTime.entrySet().removeIf(entry -> (now - entry.getValue()) > 60000);
+        blockedIps.entrySet().removeIf(entry -> now > entry.getValue());
     }
 
     private void setupRoutes() {
