@@ -19,7 +19,11 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.function.Consumer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class BookLibraryController {
+    private static final Logger logger = LoggerFactory.getLogger(BookLibraryController.class);
     private final ExtractMetadataUseCase extractMetadataUseCase;
     private final OrganizeBooksUseCase organizeBooksUseCase;
     private final GroupBooksUseCase groupBooksUseCase;
@@ -126,7 +130,7 @@ public class BookLibraryController {
                     state.setLoading(false);
                     onLoaded.accept(books);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error("Failed to load shop books", e);
                     state.setLoading(false);
                 }
             }
@@ -165,7 +169,7 @@ public class BookLibraryController {
                     state.setLoading(false);
                     onLoaded.accept(books);
                 } catch (Exception e) {
-                    e.printStackTrace();
+                    logger.error("Failed to load physical shop books", e);
                     state.setLoading(false);
                 }
             }
@@ -186,8 +190,7 @@ public class BookLibraryController {
                     get();
                     onDone.run();
                 } catch (Exception e) {
-                    System.err.println("[ERROR] Controller.placeOrder failed: " + e.getMessage());
-                    e.printStackTrace();
+                    logger.error("Controller.placeOrder failed", e);
                     JOptionPane.showMessageDialog(null, "Ошибка при оформлении заказа: " + e.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
                 }
             }

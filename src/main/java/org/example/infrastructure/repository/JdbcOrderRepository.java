@@ -4,19 +4,22 @@ import org.example.core.entity.Order;
 import org.example.core.repository.OrderRepository;
 import org.example.infrastructure.db.DatabaseConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 public class JdbcOrderRepository implements OrderRepository {
+    private static final Logger logger = LoggerFactory.getLogger(JdbcOrderRepository.class);
 
     @Override
     public Order save(Order order) {
         String sql = "INSERT INTO orders (user_id, book_id, status, seat_number, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            System.out.println("[DEBUG] JdbcOrderRepository.save: Prepared statement for user " + order.getUserId());
             ps.setInt(1, order.getUserId());
             ps.setInt(2, order.getBookId());
             ps.setString(3, order.getStatus().name());
@@ -24,17 +27,14 @@ public class JdbcOrderRepository implements OrderRepository {
             ps.setTimestamp(5, order.getStartTime() != null ? Timestamp.valueOf(order.getStartTime()) : null);
             ps.setTimestamp(6, order.getEndTime() != null ? Timestamp.valueOf(order.getEndTime()) : null);
             int affectedRows = ps.executeUpdate();
-            System.out.println("[DEBUG] JdbcOrderRepository.save: executeUpdate returned " + affectedRows);
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
-                    System.out.println("[DEBUG] JdbcOrderRepository.save: Generated ID: " + rs.getInt(1));
                     return new Order(rs.getInt(1), order.getUserId(), order.getBookId(), order.getStatus(), 
                             LocalDateTime.now(), order.getSeatNumber(), order.getStartTime(), order.getEndTime());
                 }
             }
         } catch (SQLException e) {
-            System.err.println("[ERROR] JdbcOrderRepository.save: " + e.getMessage());
-            e.printStackTrace();
+            logger.error("JdbcOrderRepository.save failed", e);
             throw new RuntimeException("Error saving order", e);
         }
         return order;

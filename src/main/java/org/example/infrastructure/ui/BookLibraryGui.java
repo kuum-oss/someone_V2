@@ -774,7 +774,7 @@ public class BookLibraryGui extends JFrame {
             }
             SwingUtilities.updateComponentTreeUI(this);
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.error("Failed to change theme", e);
         } finally {
             FlatAnimatedLafChange.hideSnapshotWithAnimation();
         }

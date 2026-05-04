@@ -4,12 +4,16 @@ import org.example.core.entity.LibrarySettings;
 import org.example.core.repository.LibrarySettingsRepository;
 import org.example.infrastructure.db.DatabaseConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 
 public class JdbcLibrarySettingsRepository implements LibrarySettingsRepository {
+    private static final Logger logger = LoggerFactory.getLogger(JdbcLibrarySettingsRepository.class);
 
     @Override
     public LibrarySettings getSettings() {
@@ -26,7 +30,7 @@ public class JdbcLibrarySettingsRepository implements LibrarySettingsRepository 
                 );
             }
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Error getting library settings", e);
         }
         return new LibrarySettings(20, null, 2, "1,2,4,8,24"); // Default
     }
@@ -42,7 +46,7 @@ public class JdbcLibrarySettingsRepository implements LibrarySettingsRepository 
             ps.setString(4, settings.getAvailablePeriods());
             ps.executeUpdate();
         } catch (SQLException e) {
-            e.printStackTrace();
+            logger.error("Error updating library settings", e);
         }
     }
 }

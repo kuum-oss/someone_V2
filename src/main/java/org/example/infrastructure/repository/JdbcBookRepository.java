@@ -4,12 +4,16 @@ import org.example.core.entity.StoredBook;
 import org.example.core.repository.BookRepository;
 import org.example.infrastructure.db.DatabaseConfig;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 public class JdbcBookRepository implements BookRepository {
+    private static final Logger logger = LoggerFactory.getLogger(JdbcBookRepository.class);
 
     @Override
     public StoredBook save(StoredBook book) {
@@ -336,7 +340,7 @@ public class JdbcBookRepository implements BookRepository {
                 }
             }
         } catch (java.sql.SQLException e) {
-            e.printStackTrace();
+            logger.error("Error finding public books", e);
         }
         return books;
     }
@@ -371,7 +375,7 @@ public class JdbcBookRepository implements BookRepository {
                 }
             }
         } catch (java.sql.SQLException e) {
-            e.printStackTrace();
+            logger.error("Error counting public books", e);
         }
         return 0;
     }
@@ -387,7 +391,7 @@ public class JdbcBookRepository implements BookRepository {
                 genres.add(rs.getString("genre"));
             }
         } catch (java.sql.SQLException e) {
-            e.printStackTrace();
+            logger.error("Error finding all genres", e);
         }
         return genres;
     }
@@ -403,7 +407,7 @@ public class JdbcBookRepository implements BookRepository {
                 languages.add(rs.getString("language"));
             }
         } catch (java.sql.SQLException e) {
-            e.printStackTrace();
+            logger.error("Error finding all languages", e);
         }
         return languages;
     }
