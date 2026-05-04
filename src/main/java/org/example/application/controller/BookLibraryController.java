@@ -129,6 +129,10 @@ public class BookLibraryController {
                     state.setBooks(books);
                     state.setLoading(false);
                     onLoaded.accept(books);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.error("Interrupted while loading shop books", e);
+                    state.setLoading(false);
                 } catch (Exception e) {
                     logger.error("Failed to load shop books", e);
                     state.setLoading(false);
@@ -168,6 +172,10 @@ public class BookLibraryController {
                     state.setBooks(books);
                     state.setLoading(false);
                     onLoaded.accept(books);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.error("Interrupted while loading physical shop books", e);
+                    state.setLoading(false);
                 } catch (Exception e) {
                     logger.error("Failed to load physical shop books", e);
                     state.setLoading(false);
@@ -189,6 +197,10 @@ public class BookLibraryController {
                 try {
                     get();
                     onDone.run();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.error("Interrupted while placing order", e);
+                    JOptionPane.showMessageDialog(null, "Запрос был прерван", "Внимание", JOptionPane.WARNING_MESSAGE);
                 } catch (Exception e) {
                     logger.error("Controller.placeOrder failed", e);
                     JOptionPane.showMessageDialog(null, "Ошибка при оформлении заказа: " + e.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
