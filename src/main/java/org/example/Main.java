@@ -17,6 +17,8 @@ import org.example.infrastructure.repository.JdbcBookRepository;
 import org.example.core.service.AdminService;
 import org.example.core.service.AuthService;
 import org.example.core.service.FileStorageService;
+import org.example.core.service.LibraryService;
+import org.example.infrastructure.repository.JdbcLibrarySettingsRepository;
 import org.example.infrastructure.ui.dialogs.AuthDialog;
 import org.example.infrastructure.web.WebServer;
 import org.slf4j.Logger;
@@ -130,12 +132,14 @@ public class Main {
                     JdbcBookRepository bookRepository = new JdbcBookRepository();
                     org.example.infrastructure.repository.JdbcOrderRepository orderRepository = new org.example.infrastructure.repository.JdbcOrderRepository();
                     org.example.infrastructure.repository.JdbcNotificationRepository notificationRepository = new org.example.infrastructure.repository.JdbcNotificationRepository();
+                    JdbcLibrarySettingsRepository settingsRepository = new JdbcLibrarySettingsRepository();
 
                     AuthService authService = new AuthService(userRepository);
                     FileStorageService storageService = new FileStorageService(bookRepository, authService, metadataAdapter, orderRepository);
                     org.example.core.service.AdminDashboardService dashboardService = new org.example.core.service.AdminDashboardService(bookRepository, notificationRepository);
                     org.example.core.service.OrderService orderService = new org.example.core.service.OrderService(orderRepository, bookRepository, dashboardService);
                     AdminService adminService = new AdminService(storageService, authService, userRepository, bookRepository);
+                    LibraryService libraryService = new LibraryService(settingsRepository, orderRepository);
 
                     org.example.application.state.LibraryViewState state = new org.example.application.state.LibraryViewState();
                     org.example.application.controller.AuthController authController = new org.example.application.controller.AuthController(authService, state);
@@ -143,7 +147,7 @@ public class Main {
                             extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, storageService, adminService, orderService, state);
 
                     BookLibraryGui gui = new BookLibraryGui(controller, authController, state, dashboardService, orderService, groupBooksUseCase,
-                            storageService, adminService, authService);
+                            storageService, adminService, authService, libraryService);
                     
                     gui.setVisible(true);
                     LOGGER.info("GUI is visible.");

@@ -9,8 +9,9 @@ import org.example.application.controller.BookLibraryController;
 import org.example.application.state.LibraryViewState;
 import org.example.application.state.ViewMode;
 import org.example.core.entity.Book;
-import org.example.core.service.AdminDashboardService;
-import org.example.core.service.OrderService;
+import org.example.core.service.*;
+import org.example.infrastructure.ui.dialogs.AdminSettingsDialog;
+import org.example.infrastructure.ui.dialogs.SeatSelectionDialog;
 import org.example.core.usecase.GroupBooksUseCase;
 import org.example.core.util.BookFileUtils;
 import org.example.infrastructure.ui.components.BookDetailsPanel;
@@ -52,6 +53,7 @@ public class BookLibraryGui extends JFrame {
     private final org.example.core.service.FileStorageService storageService; // TEMP for dialogs
     private final org.example.core.service.AdminService adminService; // TEMP for dialogs
     private final org.example.core.service.AuthService authService; // TEMP for dialogs
+    private final LibraryService libraryService;
     private final GenreImageService genreImageService = new GenreImageService();
 
     private final Preferences prefs = Preferences.userNodeForPackage(BookLibraryGui.class);
@@ -129,7 +131,8 @@ public class BookLibraryGui extends JFrame {
                           GroupBooksUseCase groupBooksUseCase,
                           org.example.core.service.FileStorageService storageService,
                           org.example.core.service.AdminService adminService,
-                          org.example.core.service.AuthService authService) {
+                          org.example.core.service.AuthService authService,
+                          LibraryService libraryService) {
         this.controller = controller;
         this.authController = authController;
         this.state = state;
@@ -139,6 +142,7 @@ public class BookLibraryGui extends JFrame {
         this.storageService = storageService;
         this.adminService = adminService;
         this.authService = authService;
+        this.libraryService = libraryService;
 
         initLocale(new Locale("en"));
         initLookAndFeel();
@@ -633,6 +637,10 @@ public class BookLibraryGui extends JFrame {
         uploadToShopItem = new JMenuItem(messages.getString("menu.upload_to_shop"));
         uploadToShopItem.addActionListener(e -> uploadAllBooksToServer());
         adminMenu.add(uploadToShopItem);
+
+        JMenuItem librarySettingsItem = new JMenuItem("Налаштування бібліотеки");
+        librarySettingsItem.addActionListener(e -> new AdminSettingsDialog(this, libraryService).setVisible(true));
+        adminMenu.add(librarySettingsItem);
 
         bar.add(adminMenu);
 
@@ -1387,9 +1395,19 @@ public class BookLibraryGui extends JFrame {
     }
 
     private void placeOrder(Book book) {
-        controller.placeOrder(book, () -> {
-            JOptionPane.showMessageDialog(BookLibraryGui.this, "Замовлення оформлено! Адмін зв'яжеться з вами.");
-        });
+        SeatSelectionDialog dialog = new SeatSelectionDialog(this, libraryService);
+        dialog.setVisible(true);
+
+        String seat = dialog.getSelectedSeat();
+        if (seat != null) {
+            System.out.println("[DEBUG] Placing order for seat: " + seat + " from " + dialog.getStartTime() + " to " + dialog.getEndTime());
+            controller.placeOrder(book, seat, dialog.getStartTime(), dialog.getEndTime(), () -> {
+                System.out.println("[DEBUG] Order placed successfully");
+                JOptionPane.showMessageDialog(BookLibraryGui.this, "Замовлення оформлено! Місце: " + seat);
+            });
+        } else {
+            System.out.println("[DEBUG] Seat selection cancelled or no seat selected");
+        }
     }
 
     private void addTestPoint() {

@@ -18,13 +18,9 @@ import org.example.core.entity.Notification;
 import org.example.core.entity.Order;
 import org.example.core.entity.StoredBook;
 import org.example.core.entity.User;
-import org.example.core.service.AdminDashboardService;
-import org.example.core.service.AuthService;
-import org.example.core.service.OrderService;
-import org.example.infrastructure.repository.JdbcBookRepository;
-import org.example.infrastructure.repository.JdbcNotificationRepository;
-import org.example.infrastructure.repository.JdbcOrderRepository;
-import org.example.infrastructure.repository.JdbcUserRepository;
+import org.example.core.entity.LibrarySettings;
+import org.example.core.service.*;
+import org.example.infrastructure.repository.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,10 +34,12 @@ public class WebServer {
     private final JdbcUserRepository userRepository;
     private final JdbcOrderRepository orderRepository;
     private final JdbcNotificationRepository notificationRepository;
+    private final JdbcLibrarySettingsRepository settingsRepository;
 
     private final AuthService authService;
     private final AdminDashboardService dashboardService;
     private final OrderService orderService;
+    private final LibraryService libraryService;
 
     private final ResourceBundle messages;
     private final Configuration freeMarkerCfg;
@@ -63,10 +61,12 @@ public class WebServer {
         this.userRepository = new JdbcUserRepository();
         this.orderRepository = new JdbcOrderRepository();
         this.notificationRepository = new JdbcNotificationRepository();
+        this.settingsRepository = new JdbcLibrarySettingsRepository();
 
         this.authService = new AuthService(userRepository);
         this.dashboardService = new AdminDashboardService(bookRepository, notificationRepository);
         this.orderService = new OrderService(orderRepository, bookRepository, dashboardService);
+        this.libraryService = new LibraryService(settingsRepository, orderRepository);
 
         this.messages = ResourceBundle.getBundle("messages", Locale.getDefault());
 
@@ -361,13 +361,73 @@ public class WebServer {
             if(user==null){ctx.redirect("/login");return;}
             int bookId=Integer.parseInt(ctx.formParam("bookId"));
             bookRepository.findById(bookId).ifPresent(book -> {
-                if(book.getBookType()==StoredBook.BookType.PHYSICAL){ orderService.placeOrder(user.getId(),book.getId()); }
+                if(book.getBookType()==StoredBook.BookType.PHYSICAL){ 
+                    ctx.redirect("/book/" + book.getId() + "/order");
+                }
                 else if(user.getPoints()>=1){
                     orderRepository.save(new Order(null,user.getId(),book.getId(),Order.Status.DELIVERED,java.time.LocalDateTime.now()));
                     authService.updateCurrentUserPoints(user.getPoints()-1);
                     ctx.sessionAttribute("currentUser",authService.getCurrentUser());
+                    ctx.redirect("/shop");
+                } else {
+                    ctx.redirect("/shop");
                 }
             });
+        });
+
+        app.get("/book/{id}/order", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if(user == null) { ctx.redirect("/login"); return; }
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            bookRepository.findById(id).ifPresentOrElse(book -> {
+                if(book.getBookType() != StoredBook.BookType.PHYSICAL) { ctx.redirect("/shop"); return; }
+                
+                int hour = ctx.queryParamAsClass("hour", Integer.class).getOrDefault(java.time.LocalDateTime.now().getHour() + 1);
+                int duration = ctx.queryParamAsClass("duration", Integer.class).getOrDefault(libraryService.getSettings().getDefaultDurationHours());
+                
+                java.time.LocalDateTime start = java.time.LocalDateTime.now().withHour(hour % 24).withMinute(0).withSecond(0).withNano(0);
+                java.time.LocalDateTime end = start.plusHours(duration);
+                
+                Set<String> occupied = libraryService.getOccupiedSeats(start, end);
+                LibrarySettings settings = libraryService.getSettings();
+
+                Map<String, Object> model = createModel(ctx);
+                model.put("book", book);
+                model.put("totalSeats", settings.getTotalSeats());
+                model.put("availablePeriods", settings.getAvailablePeriods());
+                model.put("defaultDuration", duration);
+                model.put("currentHour", hour - 1);
+                model.put("occupiedJson", "[\"" + String.join("\",\"", occupied) + "\"]");
+                
+                render(ctx, "templates/seat_selection.ftl", model);
+            }, () -> ctx.status(404).result("Book not found"));
+        });
+
+        app.post("/shop/buy/physical", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if(user == null) { ctx.status(401); return; }
+            
+            String bId = ctx.formParam("bookId");
+            String seat = ctx.formParam("seatNumber");
+            String hStr = ctx.formParam("hour");
+            String dStr = ctx.formParam("duration");
+            
+            System.out.println("[DEBUG] Web Order: bookId=" + bId + ", seat=" + seat + ", hour=" + hStr + ", duration=" + dStr);
+
+            if (bId == null || seat == null || hStr == null || dStr == null) {
+                System.out.println("[DEBUG] Web Order: Missing parameters");
+                ctx.status(400).result("Missing parameters");
+                return;
+            }
+
+            int bookId = Integer.parseInt(bId);
+            int hour = Integer.parseInt(hStr);
+            int duration = Integer.parseInt(dStr);
+            
+            java.time.LocalDateTime start = java.time.LocalDateTime.now().withHour(hour % 24).withMinute(0).withSecond(0).withNano(0);
+            java.time.LocalDateTime end = start.plusHours(duration);
+            
+            orderService.placeOrder(user.getId(), bookId, seat, start, end);
             ctx.redirect("/shop");
         });
 
@@ -380,6 +440,7 @@ public class WebServer {
                 model.put("totalVolume",String.format("%.2f",dashboardService.getTotalDataVolumeGB()));
                 model.put("users",userRepository.findAll());
                 model.put("notifications",notificationRepository.findAll());
+                model.put("librarySettings", libraryService.getSettings());
                 render(ctx,"templates/admin_dashboard.ftl",model);
             }else ctx.status(403);
         });
@@ -429,6 +490,18 @@ public class WebServer {
                 dashboardService.addNotification(null,ctx.formParam("message"));
                 ctx.redirect("/admin");
             }else ctx.status(403);
+        });
+
+        app.post("/admin/library-settings", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if(user != null && user.isAdmin()){
+                LibrarySettings settings = libraryService.getSettings();
+                settings.setTotalSeats(Integer.parseInt(ctx.formParam("totalSeats")));
+                settings.setDefaultDurationHours(Integer.parseInt(ctx.formParam("defaultDuration")));
+                settings.setAvailablePeriods(ctx.formParam("availablePeriods"));
+                libraryService.updateSettings(settings);
+                ctx.redirect("/admin");
+            } else ctx.status(403);
         });
         // --- Пополнение баллов (Тест) ---
         app.post("/user/add-point", ctx -> {

@@ -20,6 +20,11 @@ public class OrderService {
     }
 
     public Order placeOrder(Integer userId, Integer bookId) {
+        return placeOrder(userId, bookId, null, null, null);
+    }
+
+    public Order placeOrder(Integer userId, Integer bookId, String seatNumber, LocalDateTime startTime, LocalDateTime endTime) {
+        System.out.println("[DEBUG] OrderService.placeOrder called for user " + userId + ", book " + bookId + ", seat " + seatNumber);
         StoredBook book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new IllegalArgumentException("Book not found"));
         
@@ -27,11 +32,16 @@ public class OrderService {
             throw new IllegalArgumentException("Only physical books can be ordered");
         }
         
-        Order order = new Order(null, userId, bookId, Order.Status.PENDING, LocalDateTime.now());
+        Order order = new Order(null, userId, bookId, Order.Status.PENDING, LocalDateTime.now(), seatNumber, startTime, endTime);
         Order savedOrder = orderRepository.save(order);
+        System.out.println("[DEBUG] Order saved with ID: " + savedOrder.getId());
         
         // Notify admin
-        dashboardService.addNotification(null, "New order for physical book: " + book.getTitle());
+        String msg = "New order for physical book: " + book.getTitle();
+        if (seatNumber != null) {
+            msg += " (Seat: " + seatNumber + ", Time: " + startTime + " to " + endTime + ")";
+        }
+        dashboardService.addNotification(null, msg);
         
         return savedOrder;
     }

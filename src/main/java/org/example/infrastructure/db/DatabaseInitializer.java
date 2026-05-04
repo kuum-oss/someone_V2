@@ -126,11 +126,27 @@ public class DatabaseInitializer {
                 "user_id INT NOT NULL," +
                 "book_id INT NOT NULL," +
                 "status ENUM('PENDING', 'SHIPPED', 'DELIVERED', 'CANCELLED') DEFAULT 'PENDING'," +
+                "seat_number VARCHAR(50)," +
+                "start_time TIMESTAMP NULL," +
+                "end_time TIMESTAMP NULL," +
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE," +
                 "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE" +
                 ")";
         stmt.executeUpdate(createOrdersTable);
+
+        String createSettingsTable = "CREATE TABLE IF NOT EXISTS library_settings (" +
+                "id INT PRIMARY KEY," +
+                "total_seats INT NOT NULL DEFAULT 20," +
+                "seats_layout TEXT," +
+                "default_duration_hours INT NOT NULL DEFAULT 2," +
+                "available_periods TEXT" +
+                ")";
+        stmt.executeUpdate(createSettingsTable);
+
+        // Инициализация настроек по умолчанию
+        stmt.executeUpdate("INSERT IGNORE INTO library_settings (id, total_seats, default_duration_hours, available_periods) " +
+                "VALUES (1, 20, 2, '1,2,4,8,24')");
 
         // Пробуем добавить колонки, если таблица уже существует
         String[] columnsToAdd = {
@@ -144,7 +160,10 @@ public class DatabaseInitializer {
             "ALTER TABLE books ADD COLUMN cover MEDIUMBLOB",
             "ALTER TABLE books ADD COLUMN author_photo MEDIUMBLOB",
             "ALTER TABLE books ADD COLUMN book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'",
-            "ALTER TABLE books ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE"
+            "ALTER TABLE books ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE",
+            "ALTER TABLE orders ADD COLUMN seat_number VARCHAR(50)",
+            "ALTER TABLE orders ADD COLUMN start_time TIMESTAMP NULL",
+            "ALTER TABLE orders ADD COLUMN end_time TIMESTAMP NULL"
         };
 
         for (String sql : columnsToAdd) {

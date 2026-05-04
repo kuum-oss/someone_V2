@@ -173,16 +173,23 @@ public class BookLibraryController {
         worker.execute();
     }
 
-    public void placeOrder(Book book, Runnable onDone) {
+    public void placeOrder(Book book, String seatNumber, java.time.LocalDateTime start, java.time.LocalDateTime end, Runnable onDone) {
         SwingWorker<Void, Void> worker = new SwingWorker<>() {
             @Override
             protected Void doInBackground() throws Exception {
-                orderService.placeOrder(state.getCurrentUser().getId(), book.getDatabaseId());
+                orderService.placeOrder(state.getCurrentUser().getId(), book.getDatabaseId(), seatNumber, start, end);
                 return null;
             }
             @Override
             protected void done() {
-                onDone.run();
+                try {
+                    get();
+                    onDone.run();
+                } catch (Exception e) {
+                    System.err.println("[ERROR] Controller.placeOrder failed: " + e.getMessage());
+                    e.printStackTrace();
+                    JOptionPane.showMessageDialog(null, "Ошибка при оформлении заказа: " + e.getMessage(), "Ошибка", JOptionPane.ERROR_MESSAGE);
+                }
             }
         };
         worker.execute();

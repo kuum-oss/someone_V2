@@ -179,6 +179,29 @@
 
     <div class="admin-section">
         <div class="section-header">
+            <h3>⚙️ Налаштування бібліотеки</h3>
+        </div>
+        <div class="section-body">
+            <form action="/admin/library-settings" method="POST" style="display: grid; gap: 1rem; max-width: 400px;">
+                <div>
+                    <label style="display: block; font-size: 14px; margin-bottom: 4px;">Кількість місць:</label>
+                    <input type="number" name="totalSeats" class="admin-input" value="${librarySettings.totalSeats}" required>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 14px; margin-bottom: 4px;">Період за замовчуванням (год):</label>
+                    <input type="number" name="defaultDuration" class="admin-input" value="${librarySettings.defaultDurationHours}" required>
+                </div>
+                <div>
+                    <label style="display: block; font-size: 14px; margin-bottom: 4px;">Доступні періоди (через кому):</label>
+                    <input type="text" name="availablePeriods" class="admin-input" value="${librarySettings.availablePeriods}" required>
+                </div>
+                <button type="submit" class="btn btn-primary">Зберегти налаштування</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="admin-section">
+        <div class="section-header">
             <h3>📢 Рассылка уведомлений</h3>
         </div>
         <div class="section-body">

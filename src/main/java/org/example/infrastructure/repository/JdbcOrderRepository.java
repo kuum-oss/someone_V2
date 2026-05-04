@@ -13,19 +13,28 @@ public class JdbcOrderRepository implements OrderRepository {
 
     @Override
     public Order save(Order order) {
-        String sql = "INSERT INTO orders (user_id, book_id, status) VALUES (?, ?, ?)";
+        String sql = "INSERT INTO orders (user_id, book_id, status, seat_number, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
+            System.out.println("[DEBUG] JdbcOrderRepository.save: Prepared statement for user " + order.getUserId());
             ps.setInt(1, order.getUserId());
             ps.setInt(2, order.getBookId());
             ps.setString(3, order.getStatus().name());
-            ps.executeUpdate();
+            ps.setString(4, order.getSeatNumber());
+            ps.setTimestamp(5, order.getStartTime() != null ? Timestamp.valueOf(order.getStartTime()) : null);
+            ps.setTimestamp(6, order.getEndTime() != null ? Timestamp.valueOf(order.getEndTime()) : null);
+            int affectedRows = ps.executeUpdate();
+            System.out.println("[DEBUG] JdbcOrderRepository.save: executeUpdate returned " + affectedRows);
             try (ResultSet rs = ps.getGeneratedKeys()) {
                 if (rs.next()) {
-                    return new Order(rs.getInt(1), order.getUserId(), order.getBookId(), order.getStatus(), LocalDateTime.now());
+                    System.out.println("[DEBUG] JdbcOrderRepository.save: Generated ID: " + rs.getInt(1));
+                    return new Order(rs.getInt(1), order.getUserId(), order.getBookId(), order.getStatus(), 
+                            LocalDateTime.now(), order.getSeatNumber(), order.getStartTime(), order.getEndTime());
                 }
             }
         } catch (SQLException e) {
+            System.err.println("[ERROR] JdbcOrderRepository.save: " + e.getMessage());
+            e.printStackTrace();
             throw new RuntimeException("Error saving order", e);
         }
         return order;
@@ -46,7 +55,10 @@ public class JdbcOrderRepository implements OrderRepository {
                         rs.getInt("user_id"),
                         rs.getInt("book_id"),
                         Order.Status.valueOf(rs.getString("status")),
-                        rs.getTimestamp("created_at").toLocalDateTime()
+                        rs.getTimestamp("created_at").toLocalDateTime(),
+                        rs.getString("seat_number"),
+                        rs.getTimestamp("start_time") != null ? rs.getTimestamp("start_time").toLocalDateTime() : null,
+                        rs.getTimestamp("end_time") != null ? rs.getTimestamp("end_time").toLocalDateTime() : null
                 );
                 order.setUserEmail(rs.getString("email"));
                 order.setBookTitle(rs.getString("title"));
@@ -74,7 +86,10 @@ public class JdbcOrderRepository implements OrderRepository {
                             rs.getInt("user_id"),
                             rs.getInt("book_id"),
                             Order.Status.valueOf(rs.getString("status")),
-                            rs.getTimestamp("created_at").toLocalDateTime()
+                            rs.getTimestamp("created_at").toLocalDateTime(),
+                            rs.getString("seat_number"),
+                            rs.getTimestamp("start_time") != null ? rs.getTimestamp("start_time").toLocalDateTime() : null,
+                            rs.getTimestamp("end_time") != null ? rs.getTimestamp("end_time").toLocalDateTime() : null
                     );
                     order.setBookTitle(rs.getString("title"));
                     orders.add(order);
