@@ -463,6 +463,15 @@ public class WebServer {
             bookRepository.findById(id).ifPresent(book -> { if(book.getCover()!=null) ctx.contentType("image/jpeg").result(book.getCover()); });
         });
 
+        app.get("/book/{id}/author-photo", ctx -> {
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            bookRepository.findById(id).ifPresent(book -> {
+                if (book.getAuthorPhoto() != null) {
+                    ctx.contentType("image/jpeg").result(book.getAuthorPhoto());
+                }
+            });
+        });
+
         app.get("/book/{id}/download", ctx -> {
             User user = ctx.sessionAttribute("currentUser");
             if(user==null){ctx.redirect("/login"); return;}

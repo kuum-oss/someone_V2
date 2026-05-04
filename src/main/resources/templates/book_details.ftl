@@ -65,6 +65,39 @@
             font-weight: 500;
         }
 
+        /* Фото автора (кружок) */
+        .author-photo-container {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .author-circle {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            background: #f1f5f9;
+            flex-shrink: 0;
+        }
+
+        .author-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .author-circle-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            color: #94a3b8;
+        }
+
         /* 4. Блок характеристик (вместо таблицы) */
         .specs-list {
             display: flex;
@@ -150,7 +183,16 @@
         <main class="book-main-info">
             <div class="book-header-group">
                 <h1>${book.title}</h1>
-                <span class="book-author-link">${book.author!"Неизвестный автор"}</span>
+                <div class="author-photo-container">
+                    <div class="author-circle">
+                        <#if book.authorPhoto??>
+                            <img src="/book/${book.id?c}/author-photo" alt="${book.author!"Автор"}">
+                        <#else>
+                            <div class="author-circle-placeholder">👤</div>
+                        </#if>
+                    </div>
+                    <span class="book-author-link">${book.author!"Неизвестный автор"}</span>
+                </div>
             </div>
 
             <div class="specs-list">
