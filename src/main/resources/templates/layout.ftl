@@ -262,6 +262,7 @@
                 <ul>
                     <#if currentUser??>
                         <li><a href="/">Библиотека</a></li>
+                        <li><a href="/my-reading">Моё чтение</a></li>
                         <li><a href="/shop">Магазин</a></li>
                     <#else>
                         <li><a href="/shop">Магазин</a></li>

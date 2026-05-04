@@ -182,7 +182,10 @@
             <div class="book-actions">
                 <#if isOwned?? && isOwned>
                     <#if book.bookType == "ELECTRONIC">
-                        <a href="/book/${book.id?c}/download" class="btn btn-primary" style="padding: 14px 28px;">📥 Скачать книгу</a>
+                        <div style="display: flex; gap: 12px;">
+                            <a href="/book/${book.id?c}/download" class="btn btn-secondary" style="padding: 14px 24px;">📥 Скачать</a>
+                            <a href="/reader/${book.id?c}" class="btn btn-primary" style="padding: 14px 28px;">📖 Читать онлайн</a>
+                        </div>
                     <#else>
                         <span class="btn btn-secondary" style="cursor: default; opacity: 0.7;">📦 Книга уже заказана</span>
                     </#if>

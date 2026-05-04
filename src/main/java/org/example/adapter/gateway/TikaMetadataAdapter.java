@@ -68,4 +68,18 @@ public class TikaMetadataAdapter implements MetadataGateway {
         }
         return handler.toString();
     }
+
+    @Override
+    public String extractFullText(byte[] content) {
+        if (content == null) return "";
+        BodyContentHandler handler = new BodyContentHandler(-1);
+        try (InputStream in = new ByteArrayInputStream(content)) {
+            Metadata metadata = new Metadata();
+            parser.parse(in, handler, metadata, new ParseContext());
+        } catch (Exception e) {
+            LOGGER.error("Error extracting full text", e);
+            return "Ошибка при извлечении текста: " + e.getMessage();
+        }
+        return handler.toString();
+    }
 }

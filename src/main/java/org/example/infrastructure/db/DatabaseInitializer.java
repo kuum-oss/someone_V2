@@ -135,6 +135,24 @@ public class DatabaseInitializer {
                 ")";
         stmt.executeUpdate(createOrdersTable);
 
+        String createReadingProgressTable = "CREATE TABLE IF NOT EXISTS reading_progress (" +
+                "id INT AUTO_INCREMENT PRIMARY KEY," +
+                "user_id INT NOT NULL," +
+                "book_id INT NOT NULL," +
+                "current_page INT DEFAULT 0," +
+                "total_pages INT DEFAULT 0," +
+                "reading_speed DOUBLE DEFAULT 0," +
+                "notes TEXT," +
+                "review TEXT," +
+                "settings TEXT," +
+                "highlights TEXT," +
+                "last_read TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
+                "UNIQUE KEY user_book (user_id, book_id)," +
+                "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE," +
+                "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE" +
+                ")";
+        stmt.executeUpdate(createReadingProgressTable);
+
         String createSettingsTable = "CREATE TABLE IF NOT EXISTS library_settings (" +
                 "id INT PRIMARY KEY," +
                 "total_seats INT NOT NULL DEFAULT 20," +
@@ -163,7 +181,9 @@ public class DatabaseInitializer {
             "ALTER TABLE books ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE",
             "ALTER TABLE orders ADD COLUMN seat_number VARCHAR(50)",
             "ALTER TABLE orders ADD COLUMN start_time TIMESTAMP NULL",
-            "ALTER TABLE orders ADD COLUMN end_time TIMESTAMP NULL"
+            "ALTER TABLE orders ADD COLUMN end_time TIMESTAMP NULL",
+            "ALTER TABLE reading_progress ADD COLUMN settings TEXT",
+            "ALTER TABLE reading_progress ADD COLUMN highlights TEXT"
         };
 
         for (String sql : columnsToAdd) {

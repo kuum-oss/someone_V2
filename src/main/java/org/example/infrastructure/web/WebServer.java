@@ -19,8 +19,11 @@ import org.example.core.entity.Order;
 import org.example.core.entity.StoredBook;
 import org.example.core.entity.User;
 import org.example.core.entity.LibrarySettings;
+import org.example.core.entity.ReadingProgress;
 import org.example.core.service.*;
+import org.example.core.usecase.port.MetadataGateway;
 import org.example.infrastructure.repository.*;
+import org.example.adapter.gateway.TikaMetadataAdapter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,11 +38,14 @@ public class WebServer {
     private final JdbcOrderRepository orderRepository;
     private final JdbcNotificationRepository notificationRepository;
     private final JdbcLibrarySettingsRepository settingsRepository;
+    private final JdbcReadingRepository readingRepository;
 
     private final AuthService authService;
     private final AdminDashboardService dashboardService;
     private final OrderService orderService;
     private final LibraryService libraryService;
+    private final ReadingService readingService;
+    private final MetadataGateway metadataGateway;
 
     private final ResourceBundle messages;
     private final Configuration freeMarkerCfg;
@@ -62,11 +68,14 @@ public class WebServer {
         this.orderRepository = new JdbcOrderRepository();
         this.notificationRepository = new JdbcNotificationRepository();
         this.settingsRepository = new JdbcLibrarySettingsRepository();
+        this.readingRepository = new JdbcReadingRepository();
 
         this.authService = new AuthService(userRepository);
         this.dashboardService = new AdminDashboardService(bookRepository, notificationRepository);
         this.orderService = new OrderService(orderRepository, bookRepository, dashboardService);
         this.libraryService = new LibraryService(settingsRepository, orderRepository);
+        this.readingService = new ReadingService(readingRepository);
+        this.metadataGateway = new TikaMetadataAdapter();
 
         this.messages = ResourceBundle.getBundle("messages", Locale.getDefault());
 
@@ -232,8 +241,110 @@ public class WebServer {
             User user = ctx.sessionAttribute("currentUser");
             if (user == null) { ctx.redirect("/shop"); return; }
             Map<String, Object> model = createModel(ctx);
-            model.put("books", bookRepository.findOwnedBooksByUserId(user.getId()));
+            List<StoredBook> ownedBooks = bookRepository.findOwnedBooksByUserId(user.getId());
+            model.put("books", ownedBooks);
             render(ctx, "templates/library.ftl", model);
+        });
+
+        app.get("/my-reading", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.redirect("/login"); return; }
+            Map<String, Object> model = createModel(ctx);
+            List<ReadingProgress> readingList = readingService.getUserReadingList(user.getId(), 5);
+            model.put("readingList", readingList);
+            
+            List<StoredBook> books = new ArrayList<>();
+            for (ReadingProgress rp : readingList) {
+                bookRepository.findById(rp.getBookId()).ifPresent(books::add);
+            }
+            model.put("books", books);
+            render(ctx, "templates/my_reading.ftl", model);
+        });
+
+        app.get("/reader/{id}", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.redirect("/login"); return; }
+            int id = Integer.parseInt(ctx.pathParam("id"));
+            bookRepository.findById(id).ifPresentOrElse(book -> {
+                boolean isOwned = bookRepository.findOwnedBooksByUserId(user.getId()).stream().anyMatch(b -> b.getId() == id) || user.isAdmin();
+                if (!isOwned) { ctx.status(403).result("Доступ запрещен"); return; }
+                
+                Map<String, Object> model = createModel(ctx);
+                model.put("book", book);
+                model.put("bookId", id);
+                model.put("progress", readingService.getProgress(user.getId(), id).orElse(new ReadingProgress()));
+                
+                // Используем Tika для извлечения текста из любого формата
+                byte[] contentBytes = bookRepository.getBookContent(id);
+                String contentText = "";
+                if (contentBytes != null) {
+                    try {
+                        contentText = metadataGateway.extractFullText(contentBytes);
+                    } catch (Exception e) {
+                        LOGGER.error("Error extracting text for book {}", id, e);
+                        contentText = "Ошибка при чтении книги: " + e.getMessage();
+                    }
+                } else {
+                    contentText = book.getDescription();
+                }
+                model.put("bookContent", contentText);
+                
+                render(ctx, "templates/reader.ftl", model);
+            }, () -> ctx.status(404).result("Книга не найдена"));
+        });
+
+        app.post("/api/reading/progress", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.status(401); return; }
+            int bookId = Integer.parseInt(ctx.formParam("bookId"));
+            int currentPage = Integer.parseInt(ctx.formParam("currentPage"));
+            int totalPages = Integer.parseInt(ctx.formParam("totalPages"));
+            double speed = Double.parseDouble(ctx.formParam("speed"));
+
+            ReadingProgress rp = readingService.getProgress(user.getId(), bookId).orElse(new ReadingProgress());
+            rp.setUserId(user.getId());
+            rp.setBookId(bookId);
+            rp.setCurrentPage(currentPage);
+            rp.setTotalPages(totalPages);
+            if (speed > 0) rp.setReadingSpeed(speed);
+            readingService.saveProgress(rp);
+            ctx.status(200);
+        });
+
+        app.post("/api/reading/notes", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.status(401); return; }
+            int bookId = Integer.parseInt(ctx.formParam("bookId"));
+            String notes = ctx.formParam("notes");
+            readingService.updateNotes(user.getId(), bookId, notes);
+            ctx.status(200);
+        });
+
+        app.post("/api/reading/review", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.status(401); return; }
+            int bookId = Integer.parseInt(ctx.formParam("bookId"));
+            String review = ctx.formParam("review");
+            readingService.updateReview(user.getId(), bookId, review);
+            ctx.status(200);
+        });
+
+        app.post("/api/reading/settings", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.status(401); return; }
+            int bookId = Integer.parseInt(ctx.formParam("bookId"));
+            String settings = ctx.formParam("settings");
+            readingService.updateSettings(user.getId(), bookId, settings);
+            ctx.status(200);
+        });
+
+        app.post("/api/reading/highlights", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.status(401); return; }
+            int bookId = Integer.parseInt(ctx.formParam("bookId"));
+            String highlights = ctx.formParam("highlights");
+            readingService.updateHighlights(user.getId(), bookId, highlights);
+            ctx.status(200);
         });
 
         app.get("/admin/user/{id}", ctx -> {
