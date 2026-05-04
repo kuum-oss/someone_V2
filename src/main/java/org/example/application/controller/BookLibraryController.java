@@ -210,6 +210,49 @@ public class BookLibraryController {
         worker.execute();
     }
 
+    public void loadOwnedBooks(Consumer<List<Book>> onLoaded) {
+        state.setLoading(true);
+        SwingWorker<List<Book>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<Book> doInBackground() {
+                return storageService.getOwnedBooks(state.getCurrentUser().getId()).stream()
+                        .map(sb -> Book.builder()
+                                .title(sb.getTitle())
+                                .author(sb.getAuthor())
+                                .genre(sb.getGenre())
+                                .year(sb.getYear())
+                                .series(sb.getSeries())
+                                .seriesIndex(sb.getSeriesIndex())
+                                .language(sb.getLanguage())
+                                .description(sb.getDescription())
+                                .cover(sb.getCover())
+                                .authorPhoto(sb.getAuthorPhoto())
+                                .databaseId(sb.getId())
+                                .format(sb.getBookType() == StoredBook.BookType.PHYSICAL ? "PHYSICAL" : "ELECTRONIC")
+                                .isPublic(sb.isPublic())
+                                .build())
+                        .toList();
+            }
+            @Override
+            protected void done() {
+                try {
+                    List<Book> books = get();
+                    state.setLocalBooks(new java.util.ArrayList<>(books));
+                    state.setLoading(false);
+                    onLoaded.accept(books);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.error("Interrupted while loading owned books", e);
+                    state.setLoading(false);
+                } catch (Exception e) {
+                    logger.error("Failed to load owned books", e);
+                    state.setLoading(false);
+                }
+            }
+        };
+        worker.execute();
+    }
+
     public void cancelCurrentTask() {
         if (currentWorker != null && !currentWorker.isDone()) {
             currentWorker.cancel(true);

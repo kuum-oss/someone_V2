@@ -657,6 +657,9 @@ public class BookLibraryGui extends JFrame {
             if (dialog.isSucceeded()) {
                 authController.syncState();
                 updateAuthUI();
+                if (state.getMode() == ViewMode.LIBRARY) {
+                    switchToLibrary();
+                }
             }
         });
         registerItem = new JMenuItem(messages.getString("menu.register"));
@@ -667,6 +670,9 @@ public class BookLibraryGui extends JFrame {
             if (dialog.isSucceeded()) {
                 authController.syncState();
                 updateAuthUI();
+                if (state.getMode() == ViewMode.LIBRARY) {
+                    switchToLibrary();
+                }
             }
         });
         logoutItem = new JMenuItem(messages.getString("menu.logout"));
@@ -1339,7 +1345,13 @@ public class BookLibraryGui extends JFrame {
         shopButton.setEnabled(true);
         physicalShopButton.setEnabled(true);
         headerBookInfoButton.setVisible(false);
-        updateView();
+        if (state.isAuthenticated()) {
+            controller.loadOwnedBooks(books -> {
+                updateView();
+            });
+        } else {
+            updateView();
+        }
     }
 
     private void switchToShop() {
@@ -1395,6 +1407,11 @@ public class BookLibraryGui extends JFrame {
 
         controller.buyBook(book, () -> {
             JOptionPane.showMessageDialog(BookLibraryGui.this, messages.getString("msg.buy_success"));
+            if (state.getMode() == ViewMode.SHOP) {
+                loadShopBooks();
+            } else if (state.getMode() == ViewMode.LIBRARY) {
+                switchToLibrary();
+            }
         });
     }
 

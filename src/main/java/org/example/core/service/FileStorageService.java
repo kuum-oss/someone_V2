@@ -129,6 +129,10 @@ public class FileStorageService {
         LOGGER.info("Book '{}' purchased by user {}", sourceBook.getTitle(), userId);
     }
     
+    public List<StoredBook> getOwnedBooks(Integer userId) {
+        return bookRepository.findOwnedBooksByUserId(userId);
+    }
+    
     public long getUserStorageUsage(Integer userId) {
         return bookRepository.getTotalSizeByUserId(userId);
     }
