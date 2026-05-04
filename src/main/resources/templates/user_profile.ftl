@@ -65,5 +65,57 @@
                 </div>
             </#if>
         </div>
+
+        <#if userOrders?has_content>
+            <div class="admin-section" style="margin-top: 30px; background: white; border-radius: 16px; border: 1px solid var(--border-color); overflow: hidden;">
+                <div class="section-header" style="padding: 20px; border-bottom: 1px solid var(--border-color); background: #fafafa;">
+                    <h3 style="margin: 0;">📦 Заказы на физические книги</h3>
+                </div>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table" style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="text-align: left; background: #fff; border-bottom: 2px solid var(--border-color);">
+                                <th style="padding: 16px;">Книга</th>
+                                <th style="padding: 16px;">Место / Время</th>
+                                <th style="padding: 16px;">Статус</th>
+                                <th style="padding: 16px;">Действие</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <#list userOrders as order>
+                                <tr style="border-bottom: 1px solid var(--border-color);">
+                                    <td style="padding: 16px;">${order.bookTitle}</td>
+                                    <td style="padding: 16px;">
+                                        <#if order.seatNumber??>
+                                            💺 ${order.seatNumber}<br>
+                                            <small style="color: #64748b;">🕒 ${order.startTime} - ${order.endTime}</small>
+                                        <#else>
+                                            -
+                                        </#if>
+                                    </td>
+                                    <td style="padding: 16px;">
+                                        <span class="role-badge role-${order.status?lower_case}" style="padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: 600;
+                                            <#if order.status == 'PENDING'>background: #fef3c7; color: #92400e;
+                                            <#elseif order.status == 'DELIVERED'>background: #d1fae5; color: #065f46;
+                                            <#elseif order.status == 'CANCELLED'>background: #fee2e2; color: #991b1b;
+                                            </#if>">
+                                            ${order.status}
+                                        </span>
+                                    </td>
+                                    <td style="padding: 16px;">
+                                        <#if order.status == "PENDING">
+                                            <form action="/user/order/cancel" method="POST" onsubmit="return confirm('Отменить заказ?');">
+                                                <input type="hidden" name="orderId" value="${order.id?c}">
+                                                <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; color: #dc2626; border-color: #fecaca;">Отменить</button>
+                                            </form>
+                                        </#if>
+                                    </td>
+                                </tr>
+                            </#list>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </#if>
     </div>
 </@layout.main_layout>

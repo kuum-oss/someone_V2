@@ -214,6 +214,62 @@
 
     <div class="admin-section">
         <div class="section-header">
+            <h3>📦 Управление заказами</h3>
+        </div>
+        <div class="admin-table-wrapper">
+            <table class="admin-table">
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Пользователь</th>
+                    <th>Книга</th>
+                    <th>Место/Время</th>
+                    <th>Статус</th>
+                    <th>Действия</th>
+                </tr>
+                </thead>
+                <tbody>
+                <#list allOrders as order>
+                    <tr>
+                        <td style="color: #94a3b8;">#${order.id}</td>
+                        <td>${order.userEmail}</td>
+                        <td>${order.bookTitle}</td>
+                        <td>
+                            <#if order.seatNumber??>
+                                💺 ${order.seatNumber}<br>
+                                <small>🕒 ${order.startTime} - ${order.endTime}</small>
+                            <#else>
+                                -
+                            </#if>
+                        </td>
+                        <td>
+                            <span class="role-badge role-${order.status?lower_case}">${order.status}</span>
+                        </td>
+                        <td>
+                            <div style="display: flex; gap: 4px;">
+                                <#if order.status == "PENDING">
+                                    <form action="/admin/order/update-status" method="POST">
+                                        <input type="hidden" name="orderId" value="${order.id?c}">
+                                        <input type="hidden" name="status" value="DELIVERED">
+                                        <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">Выполнить</button>
+                                    </form>
+                                    <form action="/admin/order/update-status" method="POST">
+                                        <input type="hidden" name="orderId" value="${order.id?c}">
+                                        <input type="hidden" name="status" value="CANCELLED">
+                                        <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; color: #dc2626; border-color: #fecaca;">Отменить</button>
+                                    </form>
+                                </#if>
+                            </div>
+                        </td>
+                    </tr>
+                </#list>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="admin-section">
+        <div class="section-header">
             <h3>👥 Управление пользователями</h3>
         </div>
         <div class="admin-table-wrapper">

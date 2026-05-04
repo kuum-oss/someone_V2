@@ -102,6 +102,38 @@ public class JdbcOrderRepository implements OrderRepository {
     }
 
     @Override
+    public List<Order> findByUserIdAndBookId(Integer userId, Integer bookId) {
+        List<Order> orders = new ArrayList<>();
+        String sql = "SELECT o.*, b.title FROM orders o " +
+                     "JOIN books b ON o.book_id = b.id " +
+                     "WHERE o.user_id = ? AND o.book_id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Order order = new Order(
+                            rs.getInt("id"),
+                            rs.getInt("user_id"),
+                            rs.getInt("book_id"),
+                            Order.Status.valueOf(rs.getString("status")),
+                            rs.getTimestamp("created_at").toLocalDateTime(),
+                            rs.getString("seat_number"),
+                            rs.getTimestamp("start_time") != null ? rs.getTimestamp("start_time").toLocalDateTime() : null,
+                            rs.getTimestamp("end_time") != null ? rs.getTimestamp("end_time").toLocalDateTime() : null
+                    );
+                    order.setBookTitle(rs.getString("title"));
+                    orders.add(order);
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding orders by userId and bookId", e);
+        }
+        return orders;
+    }
+
+    @Override
     public void updateStatus(Integer orderId, Order.Status status) {
         String sql = "UPDATE orders SET status = ? WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();

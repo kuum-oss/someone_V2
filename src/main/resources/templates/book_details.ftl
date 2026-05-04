@@ -187,7 +187,10 @@
                             <a href="/reader/${book.id?c}" class="btn btn-primary" style="padding: 14px 28px;">📖 Читать онлайн</a>
                         </div>
                     <#else>
-                        <span class="btn btn-secondary" style="cursor: default; opacity: 0.7;">📦 Книга уже заказана</span>
+                        <div style="display: flex; flex-direction: column; gap: 8px;">
+                            <span class="btn btn-secondary" style="cursor: default; opacity: 0.7;">📦 Книга уже заказана</span>
+                            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Вы сможете заказать её снова после возврата или отмены текущего заказа.</p>
+                        </div>
                     </#if>
                 <#else>
                     <#if currentUser??>

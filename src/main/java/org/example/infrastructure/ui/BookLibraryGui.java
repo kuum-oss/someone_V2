@@ -642,6 +642,10 @@ public class BookLibraryGui extends JFrame {
         librarySettingsItem.addActionListener(e -> new AdminSettingsDialog(this, libraryService).setVisible(true));
         adminMenu.add(librarySettingsItem);
 
+        JMenuItem adminOrdersItem = new JMenuItem("Управління замовленнями");
+        adminOrdersItem.addActionListener(e -> new org.example.infrastructure.ui.dialogs.AdminOrdersDialog(this, orderService).setVisible(true));
+        adminMenu.add(adminOrdersItem);
+
         bar.add(adminMenu);
 
         // Аккаунт

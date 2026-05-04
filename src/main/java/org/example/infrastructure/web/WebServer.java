@@ -432,7 +432,27 @@ public class WebServer {
                 Map<String,Object> model = createModel(ctx);
                 model.put("book",book);
                 User user = ctx.sessionAttribute("currentUser");
-                boolean isOwned = user != null && (bookRepository.findOwnedBooksByUserId(user.getId()).stream().anyMatch(b->b.getId()==id) || user.isAdmin());
+                boolean isOwned = false;
+                if (user != null) {
+                    if (user.isAdmin()) {
+                        isOwned = true;
+                    } else {
+                        List<Order> userOrders = orderRepository.findByUserIdAndBookId(user.getId(), id);
+                        if (book.getBookType() == StoredBook.BookType.PHYSICAL) {
+                            // Физическая книга "принадлежит" пользователю, только если есть активный заказ
+                            isOwned = userOrders.stream().anyMatch(o -> 
+                                o.getStatus() == Order.Status.PENDING || o.getStatus() == Order.Status.SHIPPED);
+                        } else {
+                            // Электронная книга принадлежит, если есть любой заказ (кроме CANCELLED, если такая логика есть)
+                            // Но обычно для электронных DELIVERED значит покупку.
+                            isOwned = userOrders.stream().anyMatch(o -> o.getStatus() != Order.Status.CANCELLED);
+                            // Также проверяем, не загрузил ли пользователь её сам
+                            if (!isOwned) {
+                                isOwned = book.getUserId() != null && book.getUserId().equals(user.getId());
+                            }
+                        }
+                    }
+                }
                 model.put("isOwned",isOwned);
                 render(ctx,"templates/book_details.ftl",model);
             }, () -> ctx.status(404).result("Книга не найдена"));
@@ -552,6 +572,7 @@ public class WebServer {
                 model.put("users",userRepository.findAll());
                 model.put("notifications",notificationRepository.findAll());
                 model.put("librarySettings", libraryService.getSettings());
+                model.put("allOrders", orderService.getAllOrders());
                 render(ctx,"templates/admin_dashboard.ftl",model);
             }else ctx.status(403);
         });
@@ -601,6 +622,25 @@ public class WebServer {
                 dashboardService.addNotification(null,ctx.formParam("message"));
                 ctx.redirect("/admin");
             }else ctx.status(403);
+        });
+
+        app.post("/admin/order/update-status", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                int orderId = Integer.parseInt(ctx.formParam("orderId"));
+                Order.Status status = Order.Status.valueOf(ctx.formParam("status"));
+                orderService.updateOrderStatus(orderId, status);
+                ctx.redirect("/admin");
+            } else ctx.status(403);
+        });
+
+        app.post("/user/order/cancel", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null) {
+                int orderId = Integer.parseInt(ctx.formParam("orderId"));
+                orderService.cancelOrder(orderId, user.getId());
+                ctx.redirect("/admin/user/" + user.getId());
+            } else ctx.status(401);
         });
 
         app.post("/admin/library-settings", ctx -> {
