@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Merriweather:wght@400;700&family=Lora:ital,wght@0,400..700;1,400..700&family=Montserrat:wght@400;600&family=PT+Serif:ital,wght@0,400;0,700;1,400;1,700&display=swap" rel="stylesheet">
     <style>
         :root {
             --reader-bg: #fdfdfd;
@@ -250,6 +250,13 @@
             white-space: pre-wrap;
             position: relative;
             padding-bottom: 50vh;
+            text-align: justify;
+            hyphens: auto;
+            word-wrap: break-word;
+        }
+
+        .reading-area p {
+            margin-bottom: 1.5rem;
         }
 
         .reader-footer {
@@ -404,9 +411,12 @@
                     </div>
                     <div class="setting-item">
                         <span class="setting-label">Шрифт</span>
-                        <div class="setting-controls">
-                            <button class="setting-btn" onclick="setFont('Merriweather', true)" id="font-serif">Serif</button>
-                            <button class="setting-btn" onclick="setFont('Inter', false)" id="font-sans">Sans</button>
+                        <div class="setting-controls" style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem;">
+                            <button class="setting-btn" onclick="setFont('Merriweather', true)" id="font-serif">Merriweather</button>
+                            <button class="setting-btn" onclick="setFont('Inter', false)" id="font-sans">Inter</button>
+                            <button class="setting-btn" onclick="setFont('Lora', true)" id="font-lora">Lora</button>
+                            <button class="setting-btn" onclick="setFont('Montserrat', false)" id="font-montserrat">Montserrat</button>
+                            <button class="setting-btn" onclick="setFont('PT Serif', true)" id="font-ptserif">PT Serif</button>
                             <button class="setting-btn" onclick="setFont('OpenDyslexic', false)" id="font-dyslexic">Dyslexic</button>
                         </div>
                     </div>
@@ -434,10 +444,10 @@
                         </div>
                     </div>
                     <div class="setting-item">
-                        <span class="setting-label">Автопрокрутка</span>
-                        <div class="setting-controls">
+                        <span class="setting-label">Автопрокрутка (Скорость)</span>
+                        <div class="setting-controls" style="flex-direction: column;">
                             <button class="setting-btn" onclick="toggleAutoScroll()" id="autoScrollBtn">Выкл</button>
-                            <input type="range" min="1" max="10" value="3" id="scrollSpeed" style="width: 100%;">
+                            <input type="range" min="0.1" max="5" step="0.1" value="1" id="scrollSpeed" style="width: 100%;">
                         </div>
                     </div>
                 </div>
@@ -595,13 +605,14 @@
                 autoScrollInterval = null;
                 document.getElementById('autoScrollBtn').innerText = 'Выкл';
             } else {
-                const speed = document.getElementById('scrollSpeed').value;
+                const speedInput = document.getElementById('scrollSpeed');
                 autoScrollInterval = setInterval(() => {
-                    readerContent.scrollTop += 1;
+                    const speed = parseFloat(speedInput.value);
+                    readerContent.scrollTop += speed;
                     if (readerContent.scrollTop + readerContent.clientHeight >= readerContent.scrollHeight - 10) {
                         nextPage();
                     }
-                }, 100 / speed);
+                }, 50); // Fixed interval, variable increment for smoothness
                 document.getElementById('autoScrollBtn').innerText = 'Вкл';
             }
         }
@@ -730,7 +741,10 @@
         }
         if (settings.lineHeight) setLineHeight(settings.lineHeight);
         if (settings.textWidth) setTextWidth(settings.textWidth);
-        if (settings.font) setFont(settings.font, settings.font === 'Merriweather');
+        if (settings.font) {
+            const serifFonts = ['Merriweather', 'Lora', 'PT Serif'];
+            setFont(settings.font, serifFonts.includes(settings.font));
+        }
 
         initTOC();
         updateDisplay();
