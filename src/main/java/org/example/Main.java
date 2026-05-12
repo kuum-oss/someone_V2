@@ -133,6 +133,7 @@ public class Main {
                     org.example.infrastructure.repository.JdbcOrderRepository orderRepository = new org.example.infrastructure.repository.JdbcOrderRepository();
                     org.example.infrastructure.repository.JdbcNotificationRepository notificationRepository = new org.example.infrastructure.repository.JdbcNotificationRepository();
                     JdbcLibrarySettingsRepository settingsRepository = new JdbcLibrarySettingsRepository();
+                    org.example.infrastructure.repository.JdbcReadingRepository readingRepository = new org.example.infrastructure.repository.JdbcReadingRepository();
 
                     AuthService authService = new AuthService(userRepository);
                     FileStorageService storageService = new FileStorageService(bookRepository, authService, metadataAdapter, orderRepository);
@@ -140,11 +141,12 @@ public class Main {
                     org.example.core.service.OrderService orderService = new org.example.core.service.OrderService(orderRepository, bookRepository, dashboardService);
                     AdminService adminService = new AdminService(storageService, authService, userRepository, bookRepository);
                     LibraryService libraryService = new LibraryService(settingsRepository, orderRepository);
+                    org.example.core.service.ReadingService readingService = new org.example.core.service.ReadingService(readingRepository);
 
                     org.example.application.state.LibraryViewState state = new org.example.application.state.LibraryViewState();
                     org.example.application.controller.AuthController authController = new org.example.application.controller.AuthController(authService, state);
                     org.example.application.controller.BookLibraryController controller = new org.example.application.controller.BookLibraryController(
-                            extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, storageService, adminService, orderService, state);
+                            extractMetadataUseCase, organizeBooksUseCase, groupBooksUseCase, storageService, adminService, orderService, readingService, state);
 
                     BookLibraryGui gui = new BookLibraryGui(controller, authController, state, dashboardService, orderService, groupBooksUseCase,
                             storageService, adminService, authService, libraryService);

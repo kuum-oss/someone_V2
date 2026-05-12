@@ -20,7 +20,7 @@
                             <p style="margin: 0; font-size: 0.9rem; color: #64748b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                                 <#list books as b><#if b.id == progress.bookId>${b.author}</#if></#list>
                             </p>
-                            
+
                             <div style="margin-top: 1rem;">
                                 <div style="display: flex; justify-content: space-between; font-size: 0.8rem; margin-bottom: 0.25rem;">
                                     <span>Прогресс: ${progress.currentPage?c} / ${progress.totalPages?c} стр.</span>
@@ -32,7 +32,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div style="padding: 0 1.25rem 1.25rem 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; margin-top: auto;">
                         <div style="display: flex; gap: 0.5rem; font-size: 0.8rem; color: #64748b;">
                             <span style="background: #f1f5f9; padding: 2px 8px; border-radius: 4px;">Скорость: ${progress.readingSpeed?string("0.1")} стр/ч</span>
@@ -42,7 +42,7 @@
                 </div>
             </#list>
         </div>
-        
+
         <div class="card" style="padding: 2rem; margin-bottom: 2rem;">
             <h2 style="margin-top: 0; margin-bottom: 1.5rem; font-size: 1.5rem;">Статистика чтения</h2>
             <div style="height: 300px; width: 100%; display: flex; align-items: flex-end; gap: 1rem; padding-bottom: 1rem;">

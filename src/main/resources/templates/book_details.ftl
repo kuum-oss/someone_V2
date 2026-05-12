@@ -221,7 +221,7 @@
                 ${book.description!"Описание в процессе добавления..."}
             </article>
 
-            <div class="book-actions">
+            <div class="book-actions" style="margin-bottom: 40px;">
                 <#if isOwned?? && isOwned>
                     <#if book.bookType == "ELECTRONIC">
                         <div style="display: flex; gap: 12px;">
@@ -249,6 +249,29 @@
                 <a href="https://www.youtube.com/results?search_query=обзор+книги+${book.title?url}"
                    target="_blank" class="btn btn-secondary" style="padding: 14px 24px;">🎥 Посмотреть обзор</a>
             </div>
+
+            <#if reviews?? && reviews?size gt 0>
+                <section class="book-reviews" style="margin-top: 40px; border-top: 1px solid var(--border-color); padding-top: 32px;">
+                    <h3 style="margin-bottom: 24px; font-size: 1.5rem;">Отзывы читателей</h3>
+                    <div style="display: flex; flex-direction: column; gap: 20px;">
+                        <#list reviews as review>
+                            <div class="review-card" style="background: #f8fafc; padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); position: relative;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                                    <span style="font-weight: 600; color: var(--primary-color);">${review.reviewerName}</span>
+                                    <#if currentUser?? && currentUser.admin>
+                                        <form action="/admin/reviews/delete" method="post" onsubmit="return confirm('Вы уверены?');" style="margin: 0;">
+                                            <input type="hidden" name="reviewId" value="${review.id?c}">
+                                            <input type="hidden" name="bookId" value="${book.id?c}">
+                                            <button type="submit" style="background: none; border: none; cursor: pointer; color: #ef4444; font-size: 1.2rem;" title="Удалить отзыв">🗑</button>
+                                        </form>
+                                    </#if>
+                                </div>
+                                <p style="font-style: italic; color: #475569; line-height: 1.6; margin: 0;">"${review.reviewText}"</p>
+                            </div>
+                        </#list>
+                    </div>
+                </section>
+            </#if>
         </main>
     </div>
 </@layout.main_layout>

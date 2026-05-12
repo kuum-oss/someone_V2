@@ -1,18 +1,23 @@
 package org.example.infrastructure.ui.components;
 
 import org.example.core.entity.Book;
+import org.example.core.entity.BookReview;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.List;
 import java.util.ResourceBundle;
+import java.util.function.Consumer;
 
 public class BookDetailsPanel extends JPanel {
     private static final Logger LOGGER = LoggerFactory.getLogger(BookDetailsPanel.class);
     private final JLabel coverLabel;
     private final JLabel authorPhotoLabel;
     private final JTextArea infoArea;
+    private final JPanel reviewsContainer;
+    private final JScrollPane reviewsScrollPane;
     private final JButton copyButton;
     private final JButton descriptionButton;
     private final JButton youtubeButton;
@@ -20,7 +25,8 @@ public class BookDetailsPanel extends JPanel {
     private final JButton previewButton;
     private ResourceBundle messages;
     private Book currentBook;
-
+    private boolean isAdmin;
+    private Consumer<Integer> onReviewDelete;
 
     public BookDetailsPanel(ResourceBundle messages) {
         this.messages = messages;
@@ -43,6 +49,14 @@ public class BookDetailsPanel extends JPanel {
         infoArea.setWrapStyleWord(true);
         infoArea.setBackground(new Color(0, 0, 0, 0));
         infoArea.setFont(new Font("SansSerif", Font.PLAIN, 12));
+
+        reviewsContainer = new JPanel();
+        reviewsContainer.setLayout(new BoxLayout(reviewsContainer, BoxLayout.Y_AXIS));
+        
+        reviewsScrollPane = new JScrollPane(reviewsContainer);
+        reviewsScrollPane.setBorder(BorderFactory.createTitledBorder(messages.getString("details.reviews")));
+        reviewsScrollPane.setPreferredSize(new Dimension(280, 200));
+        reviewsScrollPane.setVisible(false);
 
         copyButton = new JButton(messages.getString("button.copy_info"));
         copyButton.addActionListener(e -> copyToClipboard());
@@ -89,7 +103,8 @@ public class BookDetailsPanel extends JPanel {
         buttonPanel.add(youtubeButton);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
-        centerPanel.add(new JScrollPane(infoArea), BorderLayout.CENTER);
+        centerPanel.add(new JScrollPane(infoArea), BorderLayout.NORTH);
+        centerPanel.add(reviewsScrollPane, BorderLayout.CENTER);
         centerPanel.add(buttonPanel, BorderLayout.SOUTH);
 
         add(photos, BorderLayout.NORTH);
@@ -101,6 +116,55 @@ public class BookDetailsPanel extends JPanel {
         updateImages(book);
         updateTextInfo(book);
         updateButtons(book);
+    }
+
+    public void updateReviews(List<BookReview> reviews) {
+        reviewsContainer.removeAll();
+        if (reviews == null || reviews.isEmpty()) {
+            reviewsScrollPane.setVisible(false);
+            return;
+        }
+
+        for (BookReview review : reviews) {
+            JPanel reviewPanel = new JPanel(new BorderLayout());
+            reviewPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
+            
+            JTextArea textArea = new JTextArea(review.getReviewerName() + ":\n" + review.getReviewText());
+            textArea.setEditable(false);
+            textArea.setLineWrap(true);
+            textArea.setWrapStyleWord(true);
+            textArea.setFont(new Font("SansSerif", Font.ITALIC, 11));
+            textArea.setBackground(new Color(0, 0, 0, 0));
+            
+            reviewPanel.add(textArea, BorderLayout.CENTER);
+
+            if (isAdmin) {
+                JButton deleteBtn = new JButton("🗑");
+                deleteBtn.setMargin(new Insets(0, 2, 0, 2));
+                deleteBtn.setToolTipText(messages.getString("button.delete_review"));
+                deleteBtn.addActionListener(e -> {
+                    if (onReviewDelete != null) {
+                        onReviewDelete.accept(review.getId());
+                    }
+                });
+                reviewPanel.add(deleteBtn, BorderLayout.EAST);
+            }
+            
+            reviewsContainer.add(reviewPanel);
+            reviewsContainer.add(new JSeparator());
+        }
+
+        reviewsScrollPane.setVisible(true);
+        revalidate();
+        repaint();
+    }
+
+    public void setAdmin(boolean admin) {
+        this.isAdmin = admin;
+    }
+
+    public void setOnReviewDelete(Consumer<Integer> onReviewDelete) {
+        this.onReviewDelete = onReviewDelete;
     }
 
     private void updateImages(Book book) {
@@ -225,6 +289,7 @@ public class BookDetailsPanel extends JPanel {
         this.messages = messages;
         updateBorder();
         authorPhotoLabel.setBorder(BorderFactory.createTitledBorder(messages.getString("details.author_photo")));
+        reviewsScrollPane.setBorder(BorderFactory.createTitledBorder(messages.getString("details.reviews")));
         copyButton.setText(messages.getString("button.copy_info"));
         descriptionButton.setText(messages.getString("button.description"));
         youtubeButton.setText(messages.getString("button.youtube"));

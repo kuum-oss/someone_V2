@@ -433,6 +433,7 @@ public class WebServer {
                 model.put("book",book);
                 User user = ctx.sessionAttribute("currentUser");
                 boolean isOwned = false;
+                List<org.example.core.entity.BookReview> reviews = readingService.getBookReviews(id);
                 if (user != null) {
                     if (user.isAdmin()) {
                         isOwned = true;
@@ -454,6 +455,7 @@ public class WebServer {
                     }
                 }
                 model.put("isOwned",isOwned);
+                model.put("reviews", reviews);
                 render(ctx,"templates/book_details.ftl",model);
             }, () -> ctx.status(404).result("Книга не найдена"));
         });
@@ -640,6 +642,30 @@ public class WebServer {
                 Order.Status status = Order.Status.valueOf(ctx.formParam("status"));
                 orderService.updateOrderStatus(orderId, status);
                 ctx.redirect("/admin");
+            } else ctx.status(403);
+        });
+
+        app.get("/admin/reviews", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                Map<String, Object> model = createModel(ctx);
+                model.put("reviews", readingService.getAllReviews());
+                render(ctx, "templates/admin_reviews.ftl", model);
+            } else ctx.status(403);
+        });
+
+        app.post("/admin/reviews/delete", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                int reviewId = Integer.parseInt(ctx.formParam("reviewId"));
+                readingService.deleteReview(reviewId);
+                
+                String bookId = ctx.formParam("bookId");
+                if (bookId != null) {
+                    ctx.redirect("/book/" + bookId);
+                } else {
+                    ctx.redirect("/admin/reviews");
+                }
             } else ctx.status(403);
         });
 

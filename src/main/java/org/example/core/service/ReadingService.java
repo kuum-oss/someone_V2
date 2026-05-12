@@ -1,5 +1,6 @@
 package org.example.core.service;
 
+import org.example.core.entity.BookReview;
 import org.example.core.entity.ReadingProgress;
 import org.example.core.repository.ReadingRepository;
 import java.util.List;
@@ -58,5 +59,17 @@ public class ReadingService {
         rp.setBookId(bookId);
         rp.setHighlights(highlights);
         readingRepository.saveOrUpdate(rp);
+    }
+
+    public List<BookReview> getBookReviews(int bookId) {
+        return readingRepository.findReviewsByBookId(bookId);
+    }
+
+    public List<BookReview> getAllReviews() {
+        return readingRepository.findAllReviews();
+    }
+
+    public void deleteReview(int progressId) {
+        readingRepository.deleteReview(progressId);
     }
 }

@@ -165,6 +165,7 @@ public class BookLibraryGui extends JFrame {
         if (physicalShopItem != null) physicalShopItem.setVisible(authenticated);
         
         boolean isAdmin = state.isAdmin();
+        if (detailsPanel != null) detailsPanel.setAdmin(isAdmin);
         if (adminMenu != null) adminMenu.setVisible(isAdmin);
         if (adminDashboardItem != null) {
             adminDashboardItem.setVisible(isAdmin);
@@ -358,6 +359,11 @@ public class BookLibraryGui extends JFrame {
 
         gridView = new BookGridView(book -> {
             detailsPanel.updateDetails(book);
+            if (book.getDatabaseId() != null) {
+                detailsPanel.updateReviews(controller.getBookReviews(book.getDatabaseId()));
+            } else {
+                detailsPanel.updateReviews(List.of());
+            }
             headerBookInfoButton.setText(book.getTitle() + " - " + book.getAuthor());
             headerBookInfoButton.setVisible(true);
         }, book -> openBook(book));
@@ -368,6 +374,30 @@ public class BookLibraryGui extends JFrame {
         centerCardPanel.add(new JScrollPane(gridView), "GRID");
 
         detailsPanel = new BookDetailsPanel(messages);
+        detailsPanel.setAdmin(state.isAdmin());
+        detailsPanel.setOnReviewDelete(reviewId -> {
+            int confirm = JOptionPane.showConfirmDialog(this, 
+                messages.getString("dialog.delete_review.confirm"), 
+                messages.getString("dialog.delete_review.title"), 
+                JOptionPane.YES_NO_OPTION);
+            if (confirm == JOptionPane.YES_OPTION) {
+                controller.deleteReview(reviewId);
+                // Refresh reviews
+                Book selectedBook = null;
+                if (state.getUiViewMode() == LibraryViewState.UiViewMode.LIST) {
+                    DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+                    if (node != null && node.getUserObject() instanceof Book book) {
+                        selectedBook = book;
+                    }
+                } else {
+                    selectedBook = gridView.getSelectedBook();
+                }
+                
+                if (selectedBook != null && selectedBook.getDatabaseId() != null) {
+                    detailsPanel.updateReviews(controller.getBookReviews(selectedBook.getDatabaseId()));
+                }
+            }
+        });
         detailsPanel.setBuyAction(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null && node.getUserObject() instanceof Book book) {
@@ -392,6 +422,11 @@ public class BookLibraryGui extends JFrame {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null && node.getUserObject() instanceof Book book) {
                 detailsPanel.updateDetails(book);
+                if (book.getDatabaseId() != null) {
+                    detailsPanel.updateReviews(controller.getBookReviews(book.getDatabaseId()));
+                } else {
+                    detailsPanel.updateReviews(List.of());
+                }
                 detailsPanel.setPreviewButtonVisible(state.getMode() == ViewMode.SHOP || state.getMode() == ViewMode.PHYSICAL_SHOP || (book.getDatabaseId() != null));
                 detailsPanel.setBuyButtonVisible(state.getMode() == ViewMode.SHOP || state.getMode() == ViewMode.PHYSICAL_SHOP);
                 if (state.getMode() == ViewMode.PHYSICAL_SHOP) {
@@ -645,6 +680,10 @@ public class BookLibraryGui extends JFrame {
         JMenuItem adminOrdersItem = new JMenuItem("Управління замовленнями");
         adminOrdersItem.addActionListener(e -> new org.example.infrastructure.ui.dialogs.AdminOrdersDialog(this, orderService).setVisible(true));
         adminMenu.add(adminOrdersItem);
+
+        JMenuItem reviewModerationItem = new JMenuItem(messages.getString("admin.reviews.title"));
+        reviewModerationItem.addActionListener(e -> new org.example.infrastructure.ui.dialogs.ReviewModerationDialog(this, controller, messages).setVisible(true));
+        adminMenu.add(reviewModerationItem);
 
         bar.add(adminMenu);
 

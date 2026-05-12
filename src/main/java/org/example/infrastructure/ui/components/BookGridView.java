@@ -46,4 +46,8 @@ public class BookGridView extends JPanel {
             item.setSelected(item.getBook().equals(selected));
         }
     }
+
+    public Book getSelectedBook() {
+        return selectedBook;
+    }
 }

@@ -1,5 +1,6 @@
 package org.example.infrastructure.repository;
 
+import org.example.core.entity.BookReview;
 import org.example.core.entity.ReadingProgress;
 import org.example.core.repository.ReadingRepository;
 import org.example.infrastructure.db.DatabaseConfig;
@@ -82,6 +83,63 @@ public class JdbcReadingRepository implements ReadingRepository {
             logger.error("Error finding reading progress for user", e);
         }
         return list;
+    }
+
+    @Override
+    public List<BookReview> findReviewsByBookId(int bookId) {
+        List<BookReview> reviews = new ArrayList<>();
+        String sql = "SELECT rp.id, u.email, rp.review FROM reading_progress rp " +
+                     "JOIN users u ON rp.user_id = u.id " +
+                     "WHERE rp.book_id = ? AND rp.review IS NOT NULL AND rp.review != ''";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, bookId);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    reviews.add(new BookReview(rs.getInt("id"), rs.getString("email"), rs.getString("review")));
+                }
+            }
+        } catch (SQLException e) {
+            logger.error("Error finding reviews for book", e);
+        }
+        return reviews;
+    }
+
+    @Override
+    public List<BookReview> findAllReviews() {
+        List<BookReview> reviews = new ArrayList<>();
+        String sql = "SELECT rp.id, u.email, rp.review, b.title FROM reading_progress rp " +
+                     "JOIN users u ON rp.user_id = u.id " +
+                     "JOIN books b ON rp.book_id = b.id " +
+                     "WHERE rp.review IS NOT NULL AND rp.review != '' " +
+                     "ORDER BY rp.last_read DESC";
+        try (Connection conn = DatabaseConfig.getConnection();
+             Statement stmt = conn.createStatement();
+             ResultSet rs = stmt.executeQuery(sql)) {
+            while (rs.next()) {
+                reviews.add(new BookReview(
+                    rs.getInt("id"),
+                    rs.getString("email"),
+                    rs.getString("review"),
+                    rs.getString("title")
+                ));
+            }
+        } catch (SQLException e) {
+            logger.error("Error finding all reviews", e);
+        }
+        return reviews;
+    }
+
+    @Override
+    public void deleteReview(int progressId) {
+        String sql = "UPDATE reading_progress SET review = NULL WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, progressId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.error("Error deleting review", e);
+        }
     }
 
     private ReadingProgress mapRow(ResultSet rs) throws SQLException {

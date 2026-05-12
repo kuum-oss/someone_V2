@@ -5,9 +5,11 @@ import org.example.application.async.OrganizeBooksTask;
 import org.example.application.state.LibraryViewState;
 import org.example.application.state.ViewMode;
 import org.example.core.entity.Book;
+import org.example.core.entity.BookReview;
 import org.example.core.entity.StoredBook;
 import org.example.core.service.AdminService;
 import org.example.core.service.FileStorageService;
+import org.example.core.service.ReadingService;
 import org.example.core.usecase.ExtractMetadataUseCase;
 import org.example.core.usecase.GroupBooksUseCase;
 import org.example.core.usecase.OrganizeBooksUseCase;
@@ -30,6 +32,7 @@ public class BookLibraryController {
     private final FileStorageService storageService;
     private final AdminService adminService;
     private final org.example.core.service.OrderService orderService;
+    private final ReadingService readingService;
     private final LibraryViewState state;
 
     private SwingWorker<?, ?> currentWorker;
@@ -40,6 +43,7 @@ public class BookLibraryController {
                                  FileStorageService storageService,
                                  AdminService adminService,
                                  org.example.core.service.OrderService orderService,
+                                 ReadingService readingService,
                                  LibraryViewState state) {
         this.extractMetadataUseCase = extractMetadataUseCase;
         this.organizeBooksUseCase = organizeBooksUseCase;
@@ -47,6 +51,7 @@ public class BookLibraryController {
         this.storageService = storageService;
         this.adminService = adminService;
         this.orderService = orderService;
+        this.readingService = readingService;
         this.state = state;
     }
 
@@ -265,5 +270,18 @@ public class BookLibraryController {
 
     public String getPreview(Integer bookId) {
         return storageService.getPreview(bookId);
+    }
+
+    public List<BookReview> getBookReviews(Integer bookId) {
+        if (bookId == null) return List.of();
+        return readingService.getBookReviews(bookId);
+    }
+
+    public List<BookReview> getAllReviews() {
+        return readingService.getAllReviews();
+    }
+
+    public void deleteReview(int reviewId) {
+        readingService.deleteReview(reviewId);
     }
 }

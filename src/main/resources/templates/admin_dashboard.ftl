@@ -175,6 +175,10 @@
             <span class="label">Пользователей</span>
             <span class="value">${users?size}</span>
         </div>
+        <a href="/admin/reviews" class="stat-card" style="text-decoration: none; transition: transform 0.2s;">
+            <span class="label">Модерация</span>
+            <span class="value">Отзывы 💬</span>
+        </a>
     </div>
 
     <div class="admin-section">
