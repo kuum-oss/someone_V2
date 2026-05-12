@@ -577,13 +577,16 @@ public class WebServer {
         app.get("/admin", ctx -> {
             User user = ctx.sessionAttribute("currentUser");
             if(user!=null && user.isAdmin()){
+                String category = ctx.queryParamAsClass("category", String.class).getOrDefault("overview");
                 Map<String,Object> model = createModel(ctx);
+                model.put("activeCategory", category);
                 model.put("totalBooks",dashboardService.getTotalBookCount());
                 model.put("totalVolume",String.format("%.2f",dashboardService.getTotalDataVolumeGB()));
                 model.put("users",userRepository.findAll());
                 model.put("notifications",notificationRepository.findAll());
                 model.put("librarySettings", libraryService.getSettings());
                 model.put("allOrders", orderService.getAllOrders());
+                model.put("reviews", readingService.getAllReviews()); // Добавляем отзывы для вкладки модерации
                 render(ctx,"templates/admin_dashboard.ftl",model);
             }else ctx.status(403);
         });
@@ -631,7 +634,7 @@ public class WebServer {
             User user = ctx.sessionAttribute("currentUser");
             if(user!=null && user.isAdmin()){
                 dashboardService.addNotification(null,ctx.formParam("message"));
-                ctx.redirect("/admin");
+                ctx.redirect("/admin?category=overview");
             }else ctx.status(403);
         });
 
@@ -641,7 +644,7 @@ public class WebServer {
                 int orderId = Integer.parseInt(ctx.formParam("orderId"));
                 Order.Status status = Order.Status.valueOf(ctx.formParam("status"));
                 orderService.updateOrderStatus(orderId, status);
-                ctx.redirect("/admin");
+                ctx.redirect("/admin?category=orders");
             } else ctx.status(403);
         });
 
@@ -664,7 +667,7 @@ public class WebServer {
                 if (bookId != null) {
                     ctx.redirect("/book/" + bookId);
                 } else {
-                    ctx.redirect("/admin/reviews");
+                    ctx.redirect("/admin?category=reviews");
                 }
             } else ctx.status(403);
         });
@@ -686,7 +689,7 @@ public class WebServer {
                 settings.setDefaultDurationHours(Integer.parseInt(ctx.formParam("defaultDuration")));
                 settings.setAvailablePeriods(ctx.formParam("availablePeriods"));
                 libraryService.updateSettings(settings);
-                ctx.redirect("/admin");
+                ctx.redirect("/admin?category=settings");
             } else ctx.status(403);
         });
         // --- Пополнение баллов (Тест) ---

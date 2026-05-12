@@ -153,6 +153,47 @@
         .note-message { font-weight: 500; color: #1e293b; }
         .note-date { font-size: 12px; color: #94a3b8; }
 
+        /* 6. Категории (вкладки) */
+        .admin-nav {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 32px;
+            background: white;
+            padding: 8px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            overflow-x: auto;
+        }
+        .admin-nav-item {
+            padding: 10px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: var(--secondary-color);
+            font-weight: 600;
+            font-size: 14px;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+        .admin-nav-item:hover {
+            background: #f1f5f9;
+            color: var(--primary-color);
+        }
+        .admin-nav-item.active {
+            background: var(--primary-gradient);
+            color: white;
+        }
+
+        /* 7. Отзывы */
+        .review-card {
+            padding: 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+        .review-card:last-child { border-bottom: none; }
+        .review-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; }
+        .review-book { font-weight: 700; color: var(--primary-color); font-size: 1.1rem; }
+        .review-author { font-size: 0.9rem; color: var(--secondary-color); }
+        .review-text { color: #334155; line-height: 1.6; font-style: italic; background: #f8fafc; padding: 12px; border-radius: 8px; border-left: 4px solid var(--border-color); }
+
         @media (max-width: 600px) {
             .notification-form { flex-direction: column; }
         }
@@ -162,181 +203,235 @@
         <h1><span>🛠</span> Панель администратора</h1>
     </div>
 
-    <div class="stats-grid">
-        <div class="stat-card">
-            <span class="label">Книжный фонд</span>
-            <span class="value">${totalBooks}</span>
-        </div>
-        <div class="stat-card">
-            <span class="label">Занято памяти</span>
-            <span class="value">${totalVolume} GB</span>
-        </div>
-        <div class="stat-card">
-            <span class="label">Пользователей</span>
-            <span class="value">${users?size}</span>
-        </div>
-        <a href="/admin/reviews" class="stat-card" style="text-decoration: none; transition: transform 0.2s;">
-            <span class="label">Модерация</span>
-            <span class="value">Отзывы 💬</span>
-        </a>
+    <div class="admin-nav">
+        <a href="/admin?category=overview" class="admin-nav-item ${ (activeCategory == 'overview')?string('active', '') }">📊 Обзор</a>
+        <a href="/admin?category=orders" class="admin-nav-item ${ (activeCategory == 'orders')?string('active', '') }">📦 Заказы</a>
+        <a href="/admin?category=users" class="admin-nav-item ${ (activeCategory == 'users')?string('active', '') }">👥 Пользователи</a>
+        <a href="/admin?category=reviews" class="admin-nav-item ${ (activeCategory == 'reviews')?string('active', '') }">💬 Отзывы</a>
+        <a href="/admin?category=settings" class="admin-nav-item ${ (activeCategory == 'settings')?string('active', '') }">⚙️ Настройки</a>
     </div>
 
-    <div class="admin-section">
-        <div class="section-header">
-            <h3>⚙️ Налаштування бібліотеки</h3>
+    <#if activeCategory == "overview">
+        <div class="stats-grid">
+            <div class="stat-card">
+                <span class="label">Книжный фонд</span>
+                <span class="value">${totalBooks}</span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Занято памяти</span>
+                <span class="value">${totalVolume} GB</span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Пользователей</span>
+                <span class="value">${users?size}</span>
+            </div>
+            <div class="stat-card">
+                <span class="label">Отзывы</span>
+                <span class="value">${reviews?size}</span>
+            </div>
         </div>
-        <div class="section-body">
-            <form action="/admin/library-settings" method="POST" style="display: grid; gap: 1rem; max-width: 400px;">
-                <div>
-                    <label style="display: block; font-size: 14px; margin-bottom: 4px;">Кількість місць:</label>
-                    <input type="number" name="totalSeats" class="admin-input" value="${librarySettings.totalSeats}" required>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 14px; margin-bottom: 4px;">Період за замовчуванням (год):</label>
-                    <input type="number" name="defaultDuration" class="admin-input" value="${librarySettings.defaultDurationHours}" required>
-                </div>
-                <div>
-                    <label style="display: block; font-size: 14px; margin-bottom: 4px;">Доступні періоди (через кому):</label>
-                    <input type="text" name="availablePeriods" class="admin-input" value="${librarySettings.availablePeriods}" required>
-                </div>
-                <button type="submit" class="btn btn-primary">Зберегти налаштування</button>
-            </form>
-        </div>
-    </div>
 
-    <div class="admin-section">
-        <div class="section-header">
-            <h3>📢 Рассылка уведомлений</h3>
+        <div class="admin-section">
+            <div class="section-header">
+                <h3>📢 Рассылка уведомлений</h3>
+            </div>
+            <div class="section-body">
+                <form action="/admin/add-notification" method="POST" class="notification-form">
+                    <input type="text" name="message" class="admin-input" placeholder="Введите текст сообщения для всех пользователей..." required>
+                    <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">Отправить</button>
+                </form>
+            </div>
         </div>
-        <div class="section-body">
-            <form action="/admin/add-notification" method="POST" class="notification-form">
-                <input type="text" name="message" class="admin-input" placeholder="Введите текст сообщения для всех пользователей..." required>
-                <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">Отправить</button>
-            </form>
-        </div>
-    </div>
 
-    <div class="admin-section">
-        <div class="section-header">
-            <h3>📦 Управление заказами</h3>
-        </div>
-        <div class="admin-table-wrapper">
-            <table class="admin-table">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Пользователь</th>
-                    <th>Книга</th>
-                    <th>Место/Время</th>
-                    <th>Статус</th>
-                    <th>Действия</th>
-                </tr>
-                </thead>
-                <tbody>
-                <#list allOrders as order>
-                    <tr>
-                        <td style="color: #94a3b8;">#${order.id}</td>
-                        <td>${order.userEmail}</td>
-                        <td>${order.bookTitle}</td>
-                        <td>
-                            <#if order.seatNumber??>
-                                💺 ${order.seatNumber}<br>
-                                <small>🕒 ${order.startTime} - ${order.endTime}</small>
-                            <#else>
-                                -
-                            </#if>
-                        </td>
-                        <td>
-                            <span class="role-badge role-${order.status?lower_case}">${order.status}</span>
-                        </td>
-                        <td>
-                            <div style="display: flex; gap: 4px;">
-                                <#if order.status == "PENDING">
-                                    <form action="/admin/order/update-status" method="POST">
-                                        <input type="hidden" name="orderId" value="${order.id?c}">
-                                        <input type="hidden" name="status" value="DELIVERED">
-                                        <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">Выполнить</button>
-                                    </form>
-                                    <form action="/admin/order/update-status" method="POST">
-                                        <input type="hidden" name="orderId" value="${order.id?c}">
-                                        <input type="hidden" name="status" value="CANCELLED">
-                                        <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; color: #dc2626; border-color: #fecaca;">Отменить</button>
-                                    </form>
-                                </#if>
+        <div class="admin-section">
+            <div class="section-header">
+                <h3>🔔 Последние уведомления</h3>
+            </div>
+            <div class="section-body">
+                <#if notifications?has_content>
+                    <div class="notifications-feed">
+                        <#list notifications as note>
+                            <div class="note-item">
+                                <span class="note-message">${note.message}</span>
+                                <span class="note-date">🕒 ${note.createdAt}</span>
                             </div>
-                        </td>
+                        </#list>
+                    </div>
+                <#else>
+                    <p style="color: #94a3b8; text-align: center; padding: 20px;">Уведомлений пока нет.</p>
+                </#if>
+            </div>
+        </div>
+    </#if>
+
+    <#if activeCategory == "settings">
+        <div class="admin-section">
+            <div class="section-header">
+                <h3>⚙️ Налаштування бібліотеки</h3>
+            </div>
+            <div class="section-body">
+                <form action="/admin/library-settings" method="POST" style="display: grid; gap: 1rem; max-width: 400px;">
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">Кількість місць:</label>
+                        <input type="number" name="totalSeats" class="admin-input" value="${librarySettings.totalSeats}" required>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">Період за замовчуванням (год):</label>
+                        <input type="number" name="defaultDuration" class="admin-input" value="${librarySettings.defaultDurationHours}" required>
+                    </div>
+                    <div>
+                        <label style="display: block; font-size: 14px; margin-bottom: 4px;">Доступні періоди (через кому):</label>
+                        <input type="text" name="availablePeriods" class="admin-input" value="${librarySettings.availablePeriods}" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Зберегти налаштування</button>
+                </form>
+            </div>
+        </div>
+    </#if>
+
+    <#if activeCategory == "orders">
+        <div class="admin-section">
+            <div class="section-header">
+                <h3>📦 Управление заказами</h3>
+            </div>
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Пользователь</th>
+                        <th>Книга</th>
+                        <th>Место/Время</th>
+                        <th>Статус</th>
+                        <th>Действия</th>
                     </tr>
-                </#list>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <div class="admin-section">
-        <div class="section-header">
-            <h3>👥 Управление пользователями</h3>
-        </div>
-        <div class="admin-table-wrapper">
-            <table class="admin-table">
-                <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Пользователь</th>
-                    <th>Баланс баллов</th>
-                    <th>Роль</th>
-                </tr>
-                </thead>
-                <tbody>
-                <#list users as user>
-                    <tr>
-                        <td style="color: #94a3b8;">#${user.id}</td>
-                        <td>
-                            <div class="user-info-cell">
-                                <div class="user-avatar-mini">
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
-                                        <circle cx="12" cy="7" r="4"></circle>
-                                    </svg>
+                    </thead>
+                    <tbody>
+                    <#list allOrders as order>
+                        <tr>
+                            <td style="color: #94a3b8;">#${order.id}</td>
+                            <td>${order.userEmail}</td>
+                            <td>${order.bookTitle}</td>
+                            <td>
+                                <#if order.seatNumber??>
+                                    💺 ${order.seatNumber}<br>
+                                    <small>🕒 ${order.startTime} - ${order.endTime}</small>
+                                <#else>
+                                    -
+                                </#if>
+                            </td>
+                            <td>
+                                <span class="role-badge role-${order.status?lower_case}">${order.status}</span>
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 4px;">
+                                    <#if order.status == "PENDING">
+                                        <form action="/admin/order/update-status" method="POST">
+                                            <input type="hidden" name="orderId" value="${order.id?c}">
+                                            <input type="hidden" name="status" value="DELIVERED">
+                                            <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">Выполнить</button>
+                                        </form>
+                                        <form action="/admin/order/update-status" method="POST">
+                                            <input type="hidden" name="orderId" value="${order.id?c}">
+                                            <input type="hidden" name="status" value="CANCELLED">
+                                            <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; color: #dc2626; border-color: #fecaca;">Отменить</button>
+                                        </form>
+                                    </#if>
                                 </div>
-                                <a href="/admin/user/${user.id}" class="user-link">${user.email}</a>
-                            </div>
-                        </td>
-                        <td>
+                            </td>
+                        </tr>
+                    </#list>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </#if>
+
+    <#if activeCategory == "users">
+        <div class="admin-section">
+            <div class="section-header">
+                <h3>👥 Управление пользователями</h3>
+            </div>
+            <div class="admin-table-wrapper">
+                <table class="admin-table">
+                    <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Пользователь</th>
+                        <th>Баланс баллов</th>
+                        <th>Роль</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <#list users as user>
+                        <tr>
+                            <td style="color: #94a3b8;">#${user.id}</td>
+                            <td>
+                                <div class="user-info-cell">
+                                    <div class="user-avatar-mini">
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                                            <circle cx="12" cy="7" r="4"></circle>
+                                        </svg>
+                                    </div>
+                                    <a href="/admin/user/${user.id}" class="user-link">${user.email}</a>
+                                </div>
+                            </td>
+                            <td>
                             <span style="display: inline-flex; align-items: center; gap: 4px; font-weight: 600;">
                                 💰 ${user.points}
                             </span>
-                        </td>
-                        <td>
-                            <#if user.admin>
-                                <span class="role-badge role-admin">Админ</span>
-                            <#else>
-                                <span class="role-badge role-user">Пользователь</span>
-                            </#if>
-                        </td>
-                    </tr>
-                </#list>
-                </tbody>
-            </table>
+                            </td>
+                            <td>
+                                <#if user.admin>
+                                    <span class="role-badge role-admin">Админ</span>
+                                <#else>
+                                    <span class="role-badge role-user">Пользователь</span>
+                                </#if>
+                            </td>
+                        </tr>
+                    </#list>
+                    </tbody>
+                </table>
+            </div>
         </div>
-    </div>
+    </#if>
 
-    <div class="admin-section">
-        <div class="section-header">
-            <h3>🔔 Последние уведомления</h3>
-        </div>
-        <div class="section-body">
-            <#if notifications?has_content>
-                <div class="notifications-feed">
-                    <#list notifications as note>
-                        <div class="note-item">
-                            <span class="note-message">${note.message}</span>
-                            <span class="note-date">🕒 ${note.createdAt}</span>
+    <#if activeCategory == "reviews">
+        <div class="admin-section">
+            <div class="section-header">
+                <h3>💬 Модерация отзывов</h3>
+            </div>
+            <div class="section-body" style="padding: 0;">
+                <#if reviews?has_content>
+                    <#list reviews as review>
+                        <div class="review-card">
+                            <div class="review-header">
+                                <div>
+                                    <div class="review-book">${review.bookTitle}</div>
+                                    <div class="review-author">От: <strong>${review.reviewerName}</strong></div>
+                                </div>
+                                <form action="/admin/reviews/delete" method="POST" onsubmit="return confirm('Удалить этот отзыв?');">
+                                    <input type="hidden" name="reviewId" value="${review.id?c}">
+                                    <button type="submit" class="btn btn-secondary" style="color: var(--danger-color); padding: 8px;">
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polyline points="3 6 5 6 21 6"></polyline>
+                                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                                            <line x1="10" y1="11" x2="10" y2="17"></line>
+                                            <line x1="14" y1="11" x2="14" y2="17"></line>
+                                        </svg>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="review-text">
+                                ${review.reviewText}
+                            </div>
                         </div>
                     </#list>
-                </div>
-            <#else>
-                <p style="color: #94a3b8; text-align: center; padding: 20px;">Уведомлений пока нет.</p>
-            </#if>
+                <#else>
+                    <p style="color: #94a3b8; text-align: center; padding: 40px;">Отзывов пока нет.</p>
+                </#if>
+            </div>
         </div>
-    </div>
+    </#if>
 </@layout.main_layout>
