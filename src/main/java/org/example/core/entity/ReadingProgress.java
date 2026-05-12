@@ -14,6 +14,7 @@ public class ReadingProgress {
     private String settings; // JSON string for reader settings
     private String highlights; // JSON string for highlights/comments
     private LocalDateTime lastRead;
+    private boolean isFavorite;
 
     public ReadingProgress() {}
 
@@ -49,4 +50,7 @@ public class ReadingProgress {
 
     public LocalDateTime getLastRead() { return lastRead; }
     public void setLastRead(LocalDateTime lastRead) { this.lastRead = lastRead; }
+
+    public boolean isFavorite() { return isFavorite; }
+    public void setFavorite(boolean favorite) { isFavorite = favorite; }
 }

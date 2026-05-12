@@ -10,6 +10,12 @@
         </div>
 
         <div class="filters-container" style="background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; gap: 0.5rem; overflow-x: auto; padding-bottom: 0.5rem;">
+                <a href="/?category=all" class="btn <#if currentCategory == 'all'>btn-primary<#else>btn-secondary</#if>" style="white-space: nowrap;">Все</a>
+                <a href="/?category=favorite" class="btn <#if currentCategory == 'favorite'>btn-primary<#else>btn-secondary</#if>" style="white-space: nowrap;">⭐ Избранные</a>
+                <a href="/?category=read" class="btn <#if currentCategory == 'read'>btn-primary<#else>btn-secondary</#if>" style="white-space: nowrap;">📖 Читанные</a>
+                <a href="/?category=unread" class="btn <#if currentCategory == 'unread'>btn-primary<#else>btn-secondary</#if>" style="white-space: nowrap;">🆕 Нечитанные</a>
+            </div>
             <div class="filter-group" style="flex: 2; min-width: 200px;">
                 <label for="searchInput" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Поиск</label>
                 <input type="text" id="searchInput" onkeyup="filterBooks()" placeholder="Название или автор..." class="btn btn-secondary" style="width: 100%; text-align: left; padding: 8px 12px; height: auto; box-sizing: border-box;">
@@ -21,6 +27,12 @@
         <#if books?has_content>
             <#list books as book>
                 <div class="book-card-wrapper" style="position: relative; display: flex;" data-title="${book.title?lower_case}" data-author="${(book.author!"")?lower_case}">
+                    <form action="/library/favorite/toggle?category=${currentCategory}" method="POST" style="position: absolute; top: 10px; right: 10px; z-index: 10;">
+                        <input type="hidden" name="bookId" value="${book.id?c}">
+                        <button type="submit" style="background: none; border: none; cursor: pointer; font-size: 20px; text-shadow: 0 0 3px rgba(0,0,0,0.5);">
+                            <#if progressMap[book.id?c]?? && progressMap[book.id?c].favorite>⭐<#else>☆</#if>
+                        </button>
+                    </form>
                     <a href="/book/${book.id?c}" class="book-card" style="flex: 1;">
                         <div class="book-cover">
                             <#if book.cover??>

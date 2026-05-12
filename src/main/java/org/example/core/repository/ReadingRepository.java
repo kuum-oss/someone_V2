@@ -12,4 +12,5 @@ public interface ReadingRepository {
     List<BookReview> findReviewsByBookId(int bookId);
     List<BookReview> findAllReviews();
     void deleteReview(int progressId);
+    void toggleFavorite(int userId, int bookId);
 }

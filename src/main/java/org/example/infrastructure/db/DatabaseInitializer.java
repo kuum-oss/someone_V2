@@ -146,6 +146,7 @@ public class DatabaseInitializer {
                 "review TEXT," +
                 "settings TEXT," +
                 "highlights TEXT," +
+                "is_favorite BOOLEAN DEFAULT FALSE," +
                 "last_read TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP," +
                 "UNIQUE KEY user_book (user_id, book_id)," +
                 "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE," +
@@ -183,7 +184,8 @@ public class DatabaseInitializer {
             "ALTER TABLE orders ADD COLUMN start_time TIMESTAMP NULL",
             "ALTER TABLE orders ADD COLUMN end_time TIMESTAMP NULL",
             "ALTER TABLE reading_progress ADD COLUMN settings TEXT",
-            "ALTER TABLE reading_progress ADD COLUMN highlights TEXT"
+            "ALTER TABLE reading_progress ADD COLUMN highlights TEXT",
+            "ALTER TABLE reading_progress ADD COLUMN is_favorite BOOLEAN DEFAULT FALSE"
         };
 
         for (String sql : columnsToAdd) {

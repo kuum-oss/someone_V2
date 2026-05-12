@@ -224,14 +224,28 @@
             <div class="book-actions" style="margin-bottom: 40px;">
                 <#if isOwned?? && isOwned>
                     <#if book.bookType == "ELECTRONIC">
-                        <div style="display: flex; gap: 12px;">
+                        <div style="display: flex; gap: 12px; align-items: center;">
                             <a href="/book/${book.id?c}/download" class="btn btn-secondary" style="padding: 14px 24px;">📥 Скачать</a>
                             <a href="/reader/${book.id?c}" class="btn btn-primary" style="padding: 14px 28px;">📖 Читать онлайн</a>
+                            <form action="/library/favorite/toggle" method="POST" style="margin: 0;">
+                                <input type="hidden" name="bookId" value="${book.id?c}">
+                                <button type="submit" class="btn <#if isFavorite?? && isFavorite>btn-primary<#else>btn-secondary</#if>" style="padding: 14px 20px;" title="В избранное">
+                                    <#if isFavorite?? && isFavorite>⭐<#else>☆</#if>
+                                </button>
+                            </form>
                         </div>
                     <#else>
-                        <div style="display: flex; flex-direction: column; gap: 8px;">
-                            <span class="btn btn-secondary" style="cursor: default; opacity: 0.7;">📦 Книга уже заказана</span>
-                            <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Вы сможете заказать её снова после возврата или отмены текущего заказа.</p>
+                        <div style="display: flex; gap: 12px; align-items: center;">
+                            <div style="display: flex; flex-direction: column; gap: 8px;">
+                                <span class="btn btn-secondary" style="cursor: default; opacity: 0.7;">📦 Книга уже заказана</span>
+                                <p style="font-size: 0.85rem; color: #64748b; margin: 0;">Вы сможете заказать её снова после возврата или отмены текущего заказа.</p>
+                            </div>
+                            <form action="/library/favorite/toggle" method="POST" style="margin: 0;">
+                                <input type="hidden" name="bookId" value="${book.id?c}">
+                                <button type="submit" class="btn <#if isFavorite?? && isFavorite>btn-primary<#else>btn-secondary</#if>" style="padding: 14px 20px;" title="В избранное">
+                                    <#if isFavorite?? && isFavorite>⭐<#else>☆</#if>
+                                </button>
+                            </form>
                         </div>
                     </#if>
                 <#else>

@@ -236,14 +236,56 @@ public class WebServer {
     }
 
     private void setupRoutes() {
-        // --- Главная ---
+        // --- Главная (Моя библиотека) ---
         app.get("/", ctx -> {
             User user = ctx.sessionAttribute("currentUser");
             if (user == null) { ctx.redirect("/shop"); return; }
+            
+            String category = ctx.queryParamAsClass("category", String.class).getOrDefault("all");
             Map<String, Object> model = createModel(ctx);
+            
             List<StoredBook> ownedBooks = bookRepository.findOwnedBooksByUserId(user.getId());
-            model.put("books", ownedBooks);
+            List<ReadingProgress> progressList = readingService.getAllUserProgress(user.getId());
+            Map<Integer, ReadingProgress> progressMap = progressList.stream()
+                    .collect(java.util.stream.Collectors.toMap(ReadingProgress::getBookId, rp -> rp));
+            
+            List<StoredBook> filteredBooks;
+            switch (category) {
+                case "favorite":
+                    filteredBooks = ownedBooks.stream()
+                            .filter(b -> progressMap.containsKey(b.getId()) && progressMap.get(b.getId()).isFavorite())
+                            .collect(java.util.stream.Collectors.toList());
+                    break;
+                case "read":
+                    filteredBooks = ownedBooks.stream()
+                            .filter(b -> progressMap.containsKey(b.getId()) && progressMap.get(b.getId()).getCurrentPage() > 0)
+                            .collect(java.util.stream.Collectors.toList());
+                    break;
+                case "unread":
+                    filteredBooks = ownedBooks.stream()
+                            .filter(b -> !progressMap.containsKey(b.getId()) || progressMap.get(b.getId()).getCurrentPage() == 0)
+                            .collect(java.util.stream.Collectors.toList());
+                    break;
+                case "all":
+                default:
+                    filteredBooks = ownedBooks;
+                    break;
+            }
+            
+            model.put("books", filteredBooks);
+            model.put("progressMap", progressMap);
+            model.put("currentCategory", category);
             render(ctx, "templates/library.ftl", model);
+        });
+
+        app.post("/library/favorite/toggle", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.status(401); return; }
+            int bookId = Integer.parseInt(ctx.formParam("bookId"));
+            readingService.toggleFavorite(user.getId(), bookId);
+            
+            String category = ctx.queryParamAsClass("category", String.class).getOrDefault("all");
+            ctx.redirect("/?category=" + category);
         });
 
         app.get("/my-reading", ctx -> {
@@ -272,7 +314,9 @@ public class WebServer {
                 Map<String, Object> model = createModel(ctx);
                 model.put("book", book);
                 model.put("bookId", id);
-                model.put("progress", readingService.getProgress(user.getId(), id).orElse(new ReadingProgress()));
+                ReadingProgress progress = readingService.getProgress(user.getId(), id).orElse(new ReadingProgress());
+                model.put("progress", progress);
+                model.put("isFavorite", progress.isFavorite());
                 
                 // Используем Tika для извлечения текста из любого формата
                 byte[] contentBytes = bookRepository.getBookContent(id);

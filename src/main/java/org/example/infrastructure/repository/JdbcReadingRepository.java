@@ -17,11 +17,11 @@ public class JdbcReadingRepository implements ReadingRepository {
 
     @Override
     public ReadingProgress saveOrUpdate(ReadingProgress progress) {
-        String sql = "INSERT INTO reading_progress (user_id, book_id, current_page, total_pages, reading_speed, notes, review, settings, highlights) " +
-                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?) " +
+        String sql = "INSERT INTO reading_progress (user_id, book_id, current_page, total_pages, reading_speed, notes, review, settings, highlights, is_favorite) " +
+                     "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?) " +
                      "ON DUPLICATE KEY UPDATE current_page = VALUES(current_page), total_pages = VALUES(total_pages), " +
                      "reading_speed = VALUES(reading_speed), notes = VALUES(notes), review = VALUES(review), " +
-                     "settings = VALUES(settings), highlights = VALUES(highlights)";
+                     "settings = VALUES(settings), highlights = VALUES(highlights), is_favorite = VALUES(is_favorite)";
         
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
@@ -34,6 +34,7 @@ public class JdbcReadingRepository implements ReadingRepository {
             ps.setString(7, progress.getReview());
             ps.setString(8, progress.getSettings());
             ps.setString(9, progress.getHighlights());
+            ps.setBoolean(10, progress.isFavorite());
             ps.executeUpdate();
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -142,6 +143,22 @@ public class JdbcReadingRepository implements ReadingRepository {
         }
     }
 
+    @Override
+    public void toggleFavorite(int userId, int bookId) {
+        String sql = "INSERT INTO reading_progress (user_id, book_id, is_favorite) " +
+                     "VALUES (?, ?, TRUE) " +
+                     "ON DUPLICATE KEY UPDATE is_favorite = NOT is_favorite";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, userId);
+            ps.setInt(2, bookId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            logger.error("Error toggling favorite status", e);
+            throw new RuntimeException(e);
+        }
+    }
+
     private ReadingProgress mapRow(ResultSet rs) throws SQLException {
         ReadingProgress rp = new ReadingProgress();
         rp.setId(rs.getInt("id"));
@@ -154,6 +171,7 @@ public class JdbcReadingRepository implements ReadingRepository {
         rp.setReview(rs.getString("review"));
         rp.setSettings(rs.getString("settings"));
         rp.setHighlights(rs.getString("highlights"));
+        rp.setFavorite(rs.getBoolean("is_favorite"));
         rp.setLastRead(rs.getTimestamp("last_read").toLocalDateTime());
         return rp;
     }

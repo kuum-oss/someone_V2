@@ -72,4 +72,12 @@ public class ReadingService {
     public void deleteReview(int progressId) {
         readingRepository.deleteReview(progressId);
     }
+
+    public void toggleFavorite(int userId, int bookId) {
+        readingRepository.toggleFavorite(userId, bookId);
+    }
+
+    public List<ReadingProgress> getAllUserProgress(int userId) {
+        return readingRepository.findByUserId(userId, Integer.MAX_VALUE);
+    }
 }
