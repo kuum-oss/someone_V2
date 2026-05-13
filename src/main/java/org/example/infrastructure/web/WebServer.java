@@ -560,7 +560,12 @@ public class WebServer {
                         ctx.sessionAttribute("currentUser",authService.getCurrentUser());
                         ctx.redirect("/shop");
                     } catch (Exception e) {
-                        ctx.redirect("/shop");
+                        if (e.getMessage() != null && e.getMessage().contains("Not enough points")) {
+                            ctx.sessionAttribute("error_not_enough_points", true);
+                            ctx.redirect(ctx.header("Referer") != null ? ctx.header("Referer") : "/shop");
+                        } else {
+                            ctx.redirect("/shop");
+                        }
                     }
                 }
             });
@@ -779,6 +784,14 @@ public class WebServer {
     private Map<String,Object> createModel(Context ctx){
         Map<String,Object> model = new HashMap<>();
         model.put("currentUser",ctx.sessionAttribute("currentUser"));
+        model.put("messages", messages);
+        
+        Boolean notEnoughPoints = ctx.sessionAttribute("error_not_enough_points");
+        if (notEnoughPoints != null && notEnoughPoints) {
+            model.put("error_not_enough_points", true);
+            ctx.consumeSessionAttribute("error_not_enough_points");
+        }
+        
         return model;
     }
 

@@ -222,6 +222,29 @@
             </article>
 
             <div class="book-actions" style="margin-bottom: 40px;">
+                <#if error_not_enough_points??>
+                    <div id="pointsModal" class="modal" style="display: block; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(4px);">
+                        <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-lg); width: 400px; text-align: center; border: none; animation: staggerIn 0.3s ease-out;">
+                            <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
+                            <h2 style="color: var(--primary-color); margin-bottom: 1rem;">Недостаточно баллов</h2>
+                            <p style="color: var(--secondary-color); margin-bottom: 2rem;">На вашем счету недостаточно поинтов для покупки этой книги. Хотите пополнить счет?</p>
+                            <div style="display: flex; gap: 12px; justify-content: center;">
+                                <button onclick="document.getElementById('pointsModal').style.display='none'" class="btn btn-secondary">Позже</button>
+                                <form action="/user/add-point" method="POST" style="margin: 0;">
+                                    <button type="submit" class="btn btn-primary">Пополнить (+1)</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    <script>
+                        window.onclick = function(event) {
+                            var modal = document.getElementById('pointsModal');
+                            if (event.target == modal) {
+                                modal.style.display = "none";
+                            }
+                        }
+                    </script>
+                </#if>
                 <#if isOwned?? && isOwned>
                     <#if book.bookType == "ELECTRONIC">
                         <div style="display: flex; gap: 12px; align-items: center;">
@@ -250,7 +273,7 @@
                     </#if>
                 <#else>
                     <#if currentUser??>
-                        <form action="/shop/buy" method="post" style="margin: 0;">
+                        <form action="/shop/buy" method="post" style="margin: 0;" onsubmit="return confirm('${messages.getString('dialog.buy_book.confirm')?replace('{0}', (book.price > 0)?string(book.price?string, '1'))?js_string}');">
                             <input type="hidden" name="bookId" value="${book.id?c}">
                             <button type="submit" class="btn btn-primary" style="padding: 14px 28px;">
                                 <#if book.bookType == "PHYSICAL">🛒 Заказать за ${(book.price > 0)?string(book.price?string, "1")} поинт<#else>💎 Купить за ${(book.price > 0)?string(book.price?string, "1")} поинт</#if>

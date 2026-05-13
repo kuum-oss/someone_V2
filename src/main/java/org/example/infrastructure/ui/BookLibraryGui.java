@@ -1569,7 +1569,12 @@ public class BookLibraryGui extends JFrame {
             placeOrder(book);
             return;
         }
+
         int price = book.getPrice() > 0 ? book.getPrice() : 1;
+        String confirmMsg = java.text.MessageFormat.format(messages.getString("dialog.buy_book.confirm"), price);
+        int choice = JOptionPane.showConfirmDialog(this, confirmMsg, messages.getString("dialog.confirm.title"), JOptionPane.YES_NO_OPTION);
+        if (choice != JOptionPane.YES_OPTION) return;
+
         if (state.getCurrentUser().getPoints() < price) {
             JOptionPane.showMessageDialog(this, messages.getString("msg.not_enough_points"), "Error", JOptionPane.ERROR_MESSAGE);
             return;
@@ -1589,6 +1594,11 @@ public class BookLibraryGui extends JFrame {
     }
 
     private void placeOrder(Book book) {
+        int price = book.getPrice() > 0 ? book.getPrice() : 1;
+        String confirmMsg = java.text.MessageFormat.format(messages.getString("dialog.buy_book.confirm"), price);
+        int choice = JOptionPane.showConfirmDialog(this, confirmMsg, messages.getString("dialog.confirm.title"), JOptionPane.YES_NO_OPTION);
+        if (choice != JOptionPane.YES_OPTION) return;
+
         SeatSelectionDialog dialog = new SeatSelectionDialog(this, libraryService);
         dialog.setVisible(true);
 
