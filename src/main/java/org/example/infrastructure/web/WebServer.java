@@ -22,6 +22,7 @@ import org.example.core.entity.LibrarySettings;
 import org.example.core.entity.ReadingProgress;
 import org.example.core.service.*;
 import org.example.core.usecase.port.MetadataGateway;
+import org.example.core.repository.BookRepository;
 import org.example.infrastructure.repository.*;
 import org.example.adapter.gateway.TikaMetadataAdapter;
 import org.slf4j.Logger;
@@ -33,7 +34,7 @@ import java.util.*;
 public class WebServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebServer.class);
 
-    private final JdbcBookRepository bookRepository;
+    private final BookRepository bookRepository;
     private final JdbcUserRepository userRepository;
     private final JdbcOrderRepository orderRepository;
     private final JdbcNotificationRepository notificationRepository;
@@ -65,7 +66,7 @@ public class WebServer {
     private static final long MAX_BODY_SIZE = 1_000_000; // 1MB
 
     public WebServer() {
-        this.bookRepository = new JdbcBookRepository();
+        this.bookRepository = new CachedBookRepository(new JdbcBookRepository());
         this.userRepository = new JdbcUserRepository();
         this.orderRepository = new JdbcOrderRepository();
         this.notificationRepository = new JdbcNotificationRepository();

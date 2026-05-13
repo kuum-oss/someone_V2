@@ -13,7 +13,9 @@ import org.example.adapter.gateway.ExternalMetadataGatewayImpl;
 import org.example.adapter.gateway.ThumbnailCacheService;
 import org.example.infrastructure.db.DatabaseInitializer;
 import org.example.infrastructure.repository.JdbcUserRepository;
+import org.example.core.repository.BookRepository;
 import org.example.infrastructure.repository.JdbcBookRepository;
+import org.example.infrastructure.repository.CachedBookRepository;
 import org.example.core.service.AdminService;
 import org.example.core.service.AuthService;
 import org.example.core.service.FileStorageService;
@@ -129,17 +131,17 @@ public class Main {
                     GroupBooksUseCaseImpl groupBooksUseCase = new GroupBooksUseCaseImpl();
                     
                     JdbcUserRepository userRepository = new JdbcUserRepository();
-                    JdbcBookRepository bookRepository = new JdbcBookRepository();
+                    BookRepository bookRepo = new CachedBookRepository(new JdbcBookRepository());
                     org.example.infrastructure.repository.JdbcOrderRepository orderRepository = new org.example.infrastructure.repository.JdbcOrderRepository();
                     org.example.infrastructure.repository.JdbcNotificationRepository notificationRepository = new org.example.infrastructure.repository.JdbcNotificationRepository();
                     JdbcLibrarySettingsRepository settingsRepository = new JdbcLibrarySettingsRepository();
                     org.example.infrastructure.repository.JdbcReadingRepository readingRepository = new org.example.infrastructure.repository.JdbcReadingRepository();
 
                     AuthService authService = new AuthService(userRepository);
-                    FileStorageService storageService = new FileStorageService(bookRepository, authService, metadataAdapter, orderRepository);
-                    org.example.core.service.AdminDashboardService dashboardService = new org.example.core.service.AdminDashboardService(bookRepository, notificationRepository);
-                    org.example.core.service.OrderService orderService = new org.example.core.service.OrderService(orderRepository, bookRepository, dashboardService);
-                    AdminService adminService = new AdminService(storageService, authService, userRepository, bookRepository);
+                    FileStorageService storageService = new FileStorageService(bookRepo, authService, metadataAdapter, orderRepository);
+                    org.example.core.service.AdminDashboardService dashboardService = new org.example.core.service.AdminDashboardService(bookRepo, notificationRepository);
+                    org.example.core.service.OrderService orderService = new org.example.core.service.OrderService(orderRepository, bookRepo, dashboardService);
+                    AdminService adminService = new AdminService(storageService, authService, userRepository, bookRepo);
                     LibraryService libraryService = new LibraryService(settingsRepository, orderRepository);
                     org.example.core.service.ReadingService readingService = new org.example.core.service.ReadingService(readingRepository);
 
