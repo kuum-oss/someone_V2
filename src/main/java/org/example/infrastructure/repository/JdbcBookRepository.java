@@ -17,7 +17,7 @@ public class JdbcBookRepository implements BookRepository {
 
     @Override
     public StoredBook save(StoredBook book) {
-        String sql = "INSERT INTO books (user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, file_content, is_public, book_type, is_available) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sql = "INSERT INTO books (user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, file_content, is_public, book_type, is_available, price) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, book.getUserId());
@@ -46,6 +46,14 @@ public class JdbcBookRepository implements BookRepository {
             ps.setBoolean(16, book.isPublic());
             ps.setString(17, book.getBookType().name());
             ps.setBoolean(18, book.isAvailable());
+            
+            // Если это электронная книга и цена 0, ставим 1 (fallback)
+            int effectivePrice = book.getPrice();
+            if (book.getBookType() == StoredBook.BookType.ELECTRONIC && effectivePrice <= 0) {
+                effectivePrice = 1;
+            }
+            ps.setInt(19, effectivePrice);
+            
             ps.executeUpdate();
 
             try (ResultSet rs = ps.getGeneratedKeys()) {
@@ -69,6 +77,7 @@ public class JdbcBookRepository implements BookRepository {
                             .isPublic(book.isPublic())
                             .bookType(book.getBookType())
                             .isAvailable(book.isAvailable())
+                            .price(book.getPrice())
                             .build();
                 }
             }
@@ -80,7 +89,7 @@ public class JdbcBookRepository implements BookRepository {
 
     @Override
     public void update(StoredBook book) {
-        String sql = "UPDATE books SET title = ?, author = ?, genre = ?, year = ?, series = ?, series_index = ?, language = ?, description = ?, cover = ?, author_photo = ?, is_public = ?, book_type = ?, is_available = ?, file_content = ? WHERE id = ?";
+        String sql = "UPDATE books SET title = ?, author = ?, genre = ?, year = ?, series = ?, series_index = ?, language = ?, description = ?, cover = ?, author_photo = ?, is_public = ?, book_type = ?, is_available = ?, file_content = ?, price = ? WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, book.getTitle());
@@ -101,7 +110,14 @@ public class JdbcBookRepository implements BookRepository {
             ps.setString(12, book.getBookType().name());
             ps.setBoolean(13, book.isAvailable());
             ps.setBytes(14, book.getFileContent());
-            ps.setInt(15, book.getId());
+            
+            // Если это электронная книга и цена 0, ставим 1 (fallback)
+            int effectivePrice = book.getPrice();
+            if (book.getBookType() == StoredBook.BookType.ELECTRONIC && effectivePrice <= 0) {
+                effectivePrice = 1;
+            }
+            ps.setInt(15, effectivePrice);
+            ps.setInt(16, book.getId());
             
             int rows = ps.executeUpdate();
             if (rows == 0) {
@@ -189,7 +205,8 @@ public class JdbcBookRepository implements BookRepository {
                 .originalName(rs.getString("original_name"))
                 .fileSize(rs.getLong("file_size"))
                 .fileContent(includeContent ? rs.getBytes("file_content") : null)
-                .isPublic(rs.getBoolean("is_public"));
+                .isPublic(rs.getBoolean("is_public"))
+                .price(rs.getInt("price"));
 
         // Безопасное чтение ENUM и BOOLEAN
         try {

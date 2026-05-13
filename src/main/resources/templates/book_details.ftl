@@ -253,7 +253,7 @@
                         <form action="/shop/buy" method="post" style="margin: 0;">
                             <input type="hidden" name="bookId" value="${book.id?c}">
                             <button type="submit" class="btn btn-primary" style="padding: 14px 28px;">
-                                <#if book.bookType == "PHYSICAL">🛒 Заказать за 1 поинт<#else>💎 Купить за 1 поинт</#if>
+                                <#if book.bookType == "PHYSICAL">🛒 Заказать за ${(book.price > 0)?string(book.price?string, "1")} поинт<#else>💎 Купить за ${(book.price > 0)?string(book.price?string, "1")} поинт</#if>
                             </button>
                         </form>
                     <#else>

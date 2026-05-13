@@ -35,6 +35,11 @@
                         <option value="PHYSICAL" <#if book.bookType == "PHYSICAL">selected</#if>>Физическая</option>
                     </select>
                 </div>
+                <div class="form-group">
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Стоимость (баллы)</label>
+                    <input type="number" name="price" value="${(book.price > 0)?string(book.price?string, "1")}" min="0" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
+                    <small style="color: #666; font-size: 0.8rem;">Если 0, для электронных книг будет использоваться цена 1 поинт.</small>
+                </div>
             </div>
 
             <div class="form-group">
@@ -59,10 +64,30 @@
                 </div>
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 1rem;">
-                <a href="/shop" class="btn btn-secondary">Отмена</a>
-                <button type="submit" class="btn btn-primary" style="padding: 0.5rem 2rem;">Сохранить изменения</button>
+            <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 1rem;">
+                <button type="button" class="btn btn-secondary" style="color: #dc2626; border-color: #fecaca;" onclick="deleteBook()">Удалить книгу</button>
+                <div style="display: flex; gap: 10px;">
+                    <a href="/shop" class="btn btn-secondary">Отмена</a>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.5rem 2rem;">Сохранить изменения</button>
+                </div>
             </div>
         </form>
     </div>
+
+    <script>
+        function deleteBook() {
+            if (confirm('Вы уверены, что хотите навсегда удалить эту книгу из магазина?')) {
+                const form = document.createElement('form');
+                form.method = 'POST';
+                form.action = '/admin/book/delete';
+                const input = document.createElement('input');
+                input.type = 'hidden';
+                input.name = 'id';
+                input.value = '${book.id?c}';
+                form.appendChild(input);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        }
+    </script>
 </@layout.main_layout>

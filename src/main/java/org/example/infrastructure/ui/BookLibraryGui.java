@@ -76,6 +76,7 @@ public class BookLibraryGui extends JFrame {
     private JButton shopButton;
     private JButton physicalShopButton;
     private JButton libraryButton;
+    private JButton myCloudLibraryButton;
     private JButton adminPanelButton;
     private JButton addPointButton;
     private JToggleButton listViewButton;
@@ -105,6 +106,8 @@ public class BookLibraryGui extends JFrame {
     private JMenuItem logoutItem;
     private JMenuItem currentUserItem;
     private JMenuItem uploadItem;
+    private JMenuItem downloadItem;
+    private JMenuItem myCloudLibraryItem;
     private JMenuItem uploadAllItem;
     private JMenuItem statsItem;
     private JMenuItem dupsItem;
@@ -148,9 +151,9 @@ public class BookLibraryGui extends JFrame {
         initLookAndFeel();
         try {
             initUI();
+            setupContextMenus();
             initMenuBar();
             setupDragAndDrop();
-            setupContextMenus();
             setupHotkeys();
             updateAuthUI();
         } catch (Exception e) {
@@ -162,6 +165,7 @@ public class BookLibraryGui extends JFrame {
     private void updateAuthUI() {
         boolean authenticated = state.isAuthenticated();
         if (myLibraryItem != null) myLibraryItem.setEnabled(authenticated);
+        if (myCloudLibraryItem != null) myCloudLibraryItem.setEnabled(authenticated);
         if (physicalShopItem != null) physicalShopItem.setVisible(authenticated);
         
         boolean isAdmin = state.isAdmin();
@@ -209,6 +213,10 @@ public class BookLibraryGui extends JFrame {
         if (addPointButton != null) addPointButton.setVisible(authenticated);
 
         if (libraryButton != null) libraryButton.setEnabled(authenticated && state.getMode() != ViewMode.LIBRARY);
+        if (myCloudLibraryButton != null) {
+            myCloudLibraryButton.setVisible(authenticated);
+            myCloudLibraryButton.setEnabled(authenticated); // Always enabled when auth
+        }
         if (shopButton != null) shopButton.setEnabled(authenticated && state.getMode() != ViewMode.SHOP);
         if (physicalShopButton != null) {
             physicalShopButton.setVisible(authenticated);
@@ -271,30 +279,80 @@ public class BookLibraryGui extends JFrame {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null && node.getUserObject() instanceof Book book) {
                 if (state.getMode() == ViewMode.LIBRARY) {
-                    uploadBookToServer(book);
-                } else {
+                    uploadToShop(book);
+                } else if (state.getMode() == ViewMode.SHOP || state.getMode() == ViewMode.PHYSICAL_SHOP) {
                     buyBook(book);
                 }
             }
         });
-        uploadAllContextItem = new JMenuItem(messages.getString("menu.upload_all"));
-        uploadAllContextItem.addActionListener(e -> uploadAllBooksToServer());
 
-        uploadToShopItem = new JMenuItem(messages.getString("menu.upload_to_shop"));
-        uploadToShopItem.addActionListener(e -> {
+        downloadItem = new JMenuItem(messages.getString("button.download"));
+        downloadItem.addActionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
             if (node != null && node.getUserObject() instanceof Book book) {
-                uploadToShop(book);
+                downloadBook(book);
             }
         });
+
+        myCloudLibraryItem = new JMenuItem(messages.getString("menu.my_cloud_library"));
+        myCloudLibraryItem.addActionListener(e -> switchToMyCloudLibrary());
+
+        JMenuItem deleteFromShopItem = new JMenuItem(messages.getString("menu.delete_from_shop"));
+        deleteFromShopItem.addActionListener(e -> {
+            DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+            if (node != null && node.getUserObject() instanceof Book book) {
+                if (book.getDatabaseId() != null) {
+                    int confirm = JOptionPane.showConfirmDialog(this, 
+                        messages.getString("dialog.delete_review.confirm"), // reusing confirm msg
+                        messages.getString("menu.delete_from_shop"), 
+                        JOptionPane.YES_NO_OPTION);
+                    if (confirm == JOptionPane.YES_OPTION) {
+                        adminService.deleteBookFromShop(book.getDatabaseId());
+                        JOptionPane.showMessageDialog(this, messages.getString("msg.delete_success"));
+                        if (state.getMode() == ViewMode.SHOP) loadShopBooks();
+                        else if (state.getMode() == ViewMode.PHYSICAL_SHOP) loadPhysicalShopBooks();
+                    }
+                }
+            }
+        });
+
+        uploadAllContextItem = new JMenuItem(messages.getString("menu.upload_all"));
+        uploadAllContextItem.addActionListener(e -> uploadAllBooksToServer());
 
         popupMenu.add(openItem);
         popupMenu.add(showInFolderItem);
         popupMenu.add(uploadItem);
-        popupMenu.add(uploadToShopItem);
+        popupMenu.add(downloadItem);
+        popupMenu.add(deleteFromShopItem);
         popupMenu.add(uploadAllContextItem);
         popupMenu.addSeparator();
         popupMenu.add(removeItem);
+
+        // Update visibility based on admin status and mode
+        popupMenu.addPopupMenuListener(new javax.swing.event.PopupMenuListener() {
+            @Override public void popupMenuWillBecomeVisible(javax.swing.event.PopupMenuEvent e) {
+                DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
+                Book selectedBook = (node != null && node.getUserObject() instanceof Book b) ? b : null;
+
+                boolean isAdmin = adminService.isAdmin();
+                boolean isShop = state.getMode() == ViewMode.SHOP || state.getMode() == ViewMode.PHYSICAL_SHOP;
+                boolean isLibrary = state.getMode() == ViewMode.LIBRARY;
+                
+                downloadItem.setVisible(selectedBook != null && selectedBook.getDatabaseId() != null && (selectedBook.getFilePath() == null || !java.nio.file.Files.exists(selectedBook.getFilePath())));
+                uploadItem.setVisible(isLibrary || (isShop && !isAdmin));
+                if (isShop) {
+                    uploadItem.setText(messages.getString("button.buy"));
+                } else {
+                    uploadItem.setText(messages.getString("menu.upload_to_shop"));
+                }
+                
+                deleteFromShopItem.setVisible(isAdmin && isShop);
+                uploadAllContextItem.setVisible(isAdmin && isLibrary);
+                showInFolderItem.setVisible(isLibrary);
+            }
+            @Override public void popupMenuWillBecomeInvisible(javax.swing.event.PopupMenuEvent e) {}
+            @Override public void popupMenuCanceled(javax.swing.event.PopupMenuEvent e) {}
+        });
 
         tree.setComponentPopupMenu(popupMenu);
     }
@@ -485,6 +543,10 @@ public class BookLibraryGui extends JFrame {
         physicalShopButton.addActionListener(e -> switchToPhysicalShop());
         physicalShopButton.setVisible(false);
 
+        myCloudLibraryButton = new JButton(messages.getString("menu.my_cloud_library"));
+        myCloudLibraryButton.addActionListener(e -> switchToMyCloudLibrary());
+        myCloudLibraryButton.setVisible(false);
+
         adminPanelButton = new JButton(messages.getString("admin.button.dashboard"));
         adminPanelButton.addActionListener(e -> new org.example.infrastructure.ui.dialogs.AdminDashboardDialog(this, dashboardService, messages).setVisible(true));
         adminPanelButton.setVisible(false);
@@ -547,6 +609,7 @@ public class BookLibraryGui extends JFrame {
 
         JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
         modePanel.add(libraryButton);
+        modePanel.add(myCloudLibraryButton);
         modePanel.add(shopButton);
         modePanel.add(physicalShopButton);
         modePanel.add(adminPanelButton);
@@ -639,6 +702,7 @@ public class BookLibraryGui extends JFrame {
             }
         });
         libraryMenu.add(myLibraryItem);
+        libraryMenu.add(myCloudLibraryItem);
 
         uploadAllItem = new JMenuItem(messages.getString("menu.upload_all"));
         uploadAllItem.addActionListener(e -> uploadAllBooksToServer());
@@ -908,14 +972,27 @@ public class BookLibraryGui extends JFrame {
             return;
         }
 
-        if (book.getFilePath() == null) {
-            // If no file path, try to show preview (likely a shop book)
+        if (book.getFilePath() == null || !java.nio.file.Files.exists(book.getFilePath())) {
+            // If no local file, but we have database ID, offer to download or show preview
             if (book.getDatabaseId() != null) {
-                String preview = controller.getPreview(book.getDatabaseId());
-                BookPreviewDialog dialog = new BookPreviewDialog(this,
-                    messages.getString("dialog.preview.title") + ": " + book.getTitle(),
-                    preview, messages);
-                dialog.setVisible(true);
+                int option = JOptionPane.showOptionDialog(this,
+                    messages.getString("error.no_file_path") + "\n" + messages.getString("button.download") + "?",
+                    book.getTitle(),
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    new Object[]{messages.getString("button.download"), messages.getString("button.preview"), messages.getString("button.cancel")},
+                    messages.getString("button.download"));
+
+                if (option == 0) { // Download
+                    downloadBook(book);
+                } else if (option == 1) { // Preview
+                    String preview = controller.getPreview(book.getDatabaseId());
+                    BookPreviewDialog dialog = new BookPreviewDialog(this,
+                        messages.getString("dialog.preview.title") + ": " + book.getTitle(),
+                        preview, messages);
+                    dialog.setVisible(true);
+                }
             } else {
                 JOptionPane.showMessageDialog(this,
                     messages.getString("error.no_file_path"),
@@ -1376,6 +1453,62 @@ public class BookLibraryGui extends JFrame {
         worker.execute();
     }
 
+    private void downloadBook(Book book) {
+        if (book.getDatabaseId() == null) return;
+        
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(messages.getString("button.download"));
+        chooser.setSelectedFile(new File(book.getTitle() + (book.getFormat() != null ? "." + book.getFormat().toLowerCase() : ".pdf")));
+        
+        if (chooser.showSaveDialog(this) == JFileChooser.APPROVE_OPTION) {
+            File targetFile = chooser.getSelectedFile();
+            progressBar.setIndeterminate(true);
+            progressBar.setVisible(true);
+            statusLabel.setText(messages.getString("button.download") + ": " + book.getTitle());
+            
+            new SwingWorker<Void, Void>() {
+                @Override
+                protected Void doInBackground() throws Exception {
+                    byte[] content = controller.getBookContent(book.getDatabaseId());
+                    if (content == null) throw new Exception("No content received from server");
+                    java.nio.file.Files.write(targetFile.toPath(), content);
+                    return null;
+                }
+                
+                @Override
+                protected void done() {
+                    progressBar.setVisible(false);
+                    try {
+                        get();
+                        JOptionPane.showMessageDialog(BookLibraryGui.this, messages.getString("msg.download_success"));
+                        // Update book path if it was empty
+                        // Note: Book is immutable in some aspects, but we might want to refresh view
+                    } catch (Exception e) {
+                        LOGGER.error("Download failed", e);
+                        JOptionPane.showMessageDialog(BookLibraryGui.this, messages.getString("error.download_failed") + ": " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                    statusLabel.setText(messages.getString("status.drag.drop"));
+                }
+            }.execute();
+        }
+    }
+
+    private void switchToMyCloudLibrary() {
+        if (!state.isAuthenticated()) return;
+        controller.switchMode(ViewMode.LIBRARY); // Reuse library mode or could add CLOUD mode
+        updateAuthUI();
+        detailsPanel.setBuyButtonVisible(false);
+        libraryButton.setEnabled(true);
+        myCloudLibraryButton.setEnabled(false);
+        shopButton.setEnabled(true);
+        physicalShopButton.setEnabled(true);
+        headerBookInfoButton.setVisible(false);
+        
+        controller.loadOwnedBooks(books -> {
+            updateView();
+        });
+    }
+
     private void switchToLibrary() {
         controller.switchMode(ViewMode.LIBRARY);
         updateAuthUI();
@@ -1436,12 +1569,13 @@ public class BookLibraryGui extends JFrame {
             placeOrder(book);
             return;
         }
-        if (state.getCurrentUser().getPoints() <= 0) {
+        int price = book.getPrice() > 0 ? book.getPrice() : 1;
+        if (state.getCurrentUser().getPoints() < price) {
             JOptionPane.showMessageDialog(this, messages.getString("msg.not_enough_points"), "Error", JOptionPane.ERROR_MESSAGE);
             return;
         }
 
-        authController.updatePoints(state.getCurrentUser().getPoints() - 1);
+        authController.updatePoints(state.getCurrentUser().getPoints() - price);
         updateAuthUI();
 
         controller.buyBook(book, () -> {

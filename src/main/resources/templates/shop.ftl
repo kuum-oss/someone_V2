@@ -57,7 +57,7 @@
         </form>
     </div>
 
-    <p style="margin-top: -1rem; margin-bottom: 2rem; color: var(--secondary-color);">Здесь вы можете приобрести книги за поинты. Каждая книга стоит 1 поинт (имитация).</p>
+    <p style="margin-top: -1rem; margin-bottom: 2rem; color: var(--secondary-color);">Здесь вы можете приобрести книги за поинты.</p>
 
     <div class="catalog">
         <#if books?has_content>
@@ -82,7 +82,7 @@
 
                         <div class="price-row">
                             <#if book.bookType == "ELECTRONIC">
-                                <div class="price">1 поинт</div>
+                                <div class="price">${(book.price > 0)?string(book.price?string, "1")} поинтов</div>
                             <#else>
                                 <div class="price free">Бесплатно</div>
                             </#if>

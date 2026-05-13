@@ -23,6 +23,7 @@ public class AddBookDialog extends JDialog {
     private JTextField titleField;
     private JTextField authorField;
     private JTextField genreField;
+    private JTextField priceField;
     private JLabel coverLabel;
     private byte[] coverData;
     private File bookFile;
@@ -54,6 +55,10 @@ public class AddBookDialog extends JDialog {
         formPanel.add(new JLabel(messages.getString("dialog.add_book.genre")));
         genreField = new JTextField();
         formPanel.add(genreField);
+
+        formPanel.add(new JLabel(messages.getString("dialog.add_book.price")));
+        priceField = new JTextField("0");
+        formPanel.add(priceField);
 
         add(formPanel, BorderLayout.NORTH);
 
@@ -129,11 +134,20 @@ public class AddBookDialog extends JDialog {
         }
 
         try {
+            int price = 0;
+            try {
+                price = Integer.parseInt(priceField.getText().trim());
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, messages.getString("dialog.add_book.error.invalid_price"), messages.getString("error.title"), JOptionPane.ERROR_MESSAGE);
+                return;
+            }
+
             Book.Builder builder = Book.builder()
                     .title(titleField.getText())
                     .author(authorField.getText())
                     .genre(genreField.getText())
-                    .cover(coverData);
+                    .cover(coverData)
+                    .price(price);
 
             if (!isPhysical) {
                 builder.filePath(bookFile.toPath());

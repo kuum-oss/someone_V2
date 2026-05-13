@@ -46,6 +46,8 @@ public class WebServer {
     private final LibraryService libraryService;
     private final ReadingService readingService;
     private final MetadataGateway metadataGateway;
+    private final AdminService adminService;
+    private final FileStorageService storageService;
 
     private final ResourceBundle messages;
     private final Configuration freeMarkerCfg;
@@ -76,6 +78,8 @@ public class WebServer {
         this.libraryService = new LibraryService(settingsRepository, orderRepository);
         this.readingService = new ReadingService(readingRepository);
         this.metadataGateway = new TikaMetadataAdapter();
+        this.storageService = new FileStorageService(bookRepository, authService, metadataGateway, orderRepository);
+        this.adminService = new AdminService(storageService, authService, userRepository, bookRepository);
 
         this.messages = ResourceBundle.getBundle("messages", Locale.getDefault());
 
@@ -550,13 +554,14 @@ public class WebServer {
                 if(book.getBookType()==StoredBook.BookType.PHYSICAL){ 
                     ctx.redirect("/book/" + book.getId() + "/order");
                 }
-                else if(user.getPoints()>=1){
-                    orderRepository.save(new Order(null,user.getId(),book.getId(),Order.Status.DELIVERED,java.time.LocalDateTime.now()));
-                    authService.updateCurrentUserPoints(user.getPoints()-1);
-                    ctx.sessionAttribute("currentUser",authService.getCurrentUser());
-                    ctx.redirect("/shop");
-                } else {
-                    ctx.redirect("/shop");
+                else {
+                    try {
+                        storageService.purchaseBook(user.getId(), book);
+                        ctx.sessionAttribute("currentUser",authService.getCurrentUser());
+                        ctx.redirect("/shop");
+                    } catch (Exception e) {
+                        ctx.redirect("/shop");
+                    }
                 }
             });
         });
@@ -658,6 +663,10 @@ public class WebServer {
                     book.setLanguage(ctx.formParam("language"));
                     book.setYear(ctx.formParam("year"));
                     book.setDescription(ctx.formParam("description"));
+                    String priceStr = ctx.formParam("price");
+                    if (priceStr != null) {
+                        book.setPrice(Integer.parseInt(priceStr));
+                    }
                     book.setBookType(StoredBook.BookType.valueOf(ctx.formParam("bookType")));
 
                     UploadedFile file = ctx.uploadedFile("coverFile");
@@ -670,6 +679,15 @@ public class WebServer {
                     }
                     bookRepository.update(book);
                 });
+                ctx.redirect("/shop");
+            } else ctx.status(403);
+        });
+
+        app.post("/admin/book/delete", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                int id = Integer.parseInt(ctx.formParam("id"));
+                adminService.deleteBookFromShop(id);
                 ctx.redirect("/shop");
             } else ctx.status(403);
         });

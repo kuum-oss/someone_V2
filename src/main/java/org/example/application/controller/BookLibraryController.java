@@ -272,6 +272,10 @@ public class BookLibraryController {
         return storageService.getPreview(bookId);
     }
 
+    public byte[] getBookContent(Integer bookId) {
+        return storageService.getBookContent(bookId);
+    }
+
     public List<BookReview> getBookReviews(Integer bookId) {
         if (bookId == null) return List.of();
         return readingService.getBookReviews(bookId);

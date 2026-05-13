@@ -19,6 +19,7 @@ public class Book {
     private byte[] authorPhoto;
     private Integer databaseId;
     private boolean isPublic;
+    private int price; // <--- ДОБАВЛЕНО: Стоимость в баллах
 
     // We can use a small cache or just keep them as is, 
     // but the recommendation was to consider memory.
@@ -43,6 +44,7 @@ public class Book {
         this.authorPhoto = b.authorPhoto;
         this.databaseId = b.databaseId;
         this.isPublic = b.isPublic;
+        this.price = b.price;
     }
 
     public String getTitle() { return title; }
@@ -59,6 +61,7 @@ public class Book {
     public byte[] getAuthorPhoto() { return authorPhoto; }
     public Integer getDatabaseId() { return databaseId; }
     public boolean isPublic() { return isPublic; }
+    public int getPrice() { return price; }
 
     @Override
     public boolean equals(Object o) {
@@ -103,6 +106,7 @@ public class Book {
         private byte[] authorPhoto;
         private Integer databaseId;
         private boolean isPublic;
+        private int price;
 
         public Builder title(String v) { title = v; return this; }
         public Builder author(String v) { author = v; return this; }
@@ -118,6 +122,7 @@ public class Book {
         public Builder authorPhoto(byte[] v) { authorPhoto = v; return this; }
         public Builder databaseId(Integer v) { databaseId = v; return this; }
         public Builder isPublic(boolean v) { isPublic = v; return this; }
+        public Builder price(int v) { price = v; return this; }
 
         public Book build() { return new Book(this); }
     }

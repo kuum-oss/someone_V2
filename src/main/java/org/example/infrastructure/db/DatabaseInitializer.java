@@ -98,6 +98,7 @@ public class DatabaseInitializer {
                 "file_size BIGINT NOT NULL DEFAULT 0," +
                 "file_content LONGBLOB," +
                 "is_public BOOLEAN NOT NULL DEFAULT FALSE," +
+                "price INT NOT NULL DEFAULT 0," +
                 "book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'," +
                 "is_available BOOLEAN NOT NULL DEFAULT TRUE," +
                 "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
@@ -180,6 +181,7 @@ public class DatabaseInitializer {
             "ALTER TABLE books ADD COLUMN author_photo MEDIUMBLOB",
             "ALTER TABLE books ADD COLUMN book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'",
             "ALTER TABLE books ADD COLUMN is_available BOOLEAN NOT NULL DEFAULT TRUE",
+            "ALTER TABLE books ADD COLUMN price INT NOT NULL DEFAULT 0",
             "ALTER TABLE orders ADD COLUMN seat_number VARCHAR(50)",
             "ALTER TABLE orders ADD COLUMN start_time TIMESTAMP NULL",
             "ALTER TABLE orders ADD COLUMN end_time TIMESTAMP NULL",
@@ -193,6 +195,11 @@ public class DatabaseInitializer {
                 stmt.executeUpdate(sql);
             } catch (SQLException ignored) {}
         }
+
+        // Устанавливаем цену по умолчанию для существующих публичных книг, если она равна 0
+        try {
+            stmt.executeUpdate("UPDATE books SET price = 1 WHERE is_public = TRUE AND price = 0 AND book_type = 'ELECTRONIC'");
+        } catch (SQLException ignored) {}
 
         try {
             stmt.executeUpdate("ALTER TABLE users ADD COLUMN is_admin BOOLEAN NOT NULL DEFAULT FALSE");

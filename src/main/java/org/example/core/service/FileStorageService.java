@@ -100,6 +100,7 @@ public class FileStorageService {
                 .isPublic(isPublic)
                 .bookType(type)
                 .format(book.getFormat())
+                .price(book.getPrice())
                 .build();
         
         bookRepository.save(sb);
@@ -123,10 +124,22 @@ public class FileStorageService {
         org.example.core.entity.StoredBook sourceBook = bookRepository.findById(publicBook.getId())
                 .orElseThrow(() -> new RuntimeException("Book not found with ID: " + publicBook.getId()));
 
+        int price = sourceBook.getPrice();
+        if (sourceBook.getBookType() == StoredBook.BookType.ELECTRONIC && price <= 0) {
+            price = 1;
+        }
+        
+        int currentPoints = authService.getCurrentUser().getPoints();
+        if (currentPoints < price) {
+            throw new RuntimeException("Not enough points!");
+        }
+
+        authService.updateCurrentUserPoints(currentPoints - price);
+        
         // Вместо дублирования книги в таблице books, мы просто создаем запись в orders,
         // чтобы пользователь владел оригинальной публичной книгой.
         orderRepository.save(new Order(null, userId, sourceBook.getId(), Order.Status.DELIVERED, java.time.LocalDateTime.now()));
-        LOGGER.info("Book '{}' purchased by user {}", sourceBook.getTitle(), userId);
+        LOGGER.info("Book '{}' purchased by user {} for {} points", sourceBook.getTitle(), userId, price);
     }
     
     public List<StoredBook> getOwnedBooks(Integer userId) {

@@ -12,6 +12,7 @@ public class StoredBook {
     private long fileSize;
     private byte[] fileContent;
     private boolean isPublic;
+    private int price;
 
     private String author;
     private String genre;
@@ -47,6 +48,7 @@ public class StoredBook {
         this.fileSize = fileSize;
         this.fileContent = fileContent;
         this.isPublic = isPublic;
+        this.price = 0;
     }
 
     public static Builder builder() {
@@ -62,6 +64,7 @@ public class StoredBook {
         private long fileSize;
         private byte[] fileContent;
         private boolean isPublic;
+        private int price;
         private String author;
         private String genre;
         private String year;
@@ -83,6 +86,7 @@ public class StoredBook {
         public Builder fileSize(long fileSize) { this.fileSize = fileSize; return this; }
         public Builder fileContent(byte[] fileContent) { this.fileContent = fileContent; return this; }
         public Builder isPublic(boolean isPublic) { this.isPublic = isPublic; return this; }
+        public Builder price(int price) { this.price = price; return this; }
         public Builder author(String author) { this.author = author; return this; }
         public Builder genre(String genre) { this.genre = genre; return this; }
         public Builder year(String year) { this.year = year; return this; }
@@ -116,6 +120,7 @@ public class StoredBook {
             sb.format = format; // <--- ДОБАВЛЕНО: Присвоение формата при сборке
             sb.bookType = bookType;
             sb.isAvailable = isAvailable;
+            sb.price = price;
             return sb;
         }
     }
@@ -129,6 +134,7 @@ public class StoredBook {
     public long getFileSize() { return fileSize; }
     public byte[] getFileContent() { return fileContent; }
     public boolean isPublic() { return isPublic; }
+    public int getPrice() { return price; }
     public String getAuthor() { return author; }
     public String getGenre() { return genre; }
     public String getYear() { return year; }
@@ -154,4 +160,5 @@ public class StoredBook {
     public void setDescription(String description) { this.description = description; }
     public void setBookType(BookType bookType) { this.bookType = bookType; }
     public void setCover(byte[] cover) { this.cover = cover; }
+    public void setPrice(int price) { this.price = price; }
 }
