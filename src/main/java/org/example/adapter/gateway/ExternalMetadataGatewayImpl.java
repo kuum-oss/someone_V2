@@ -164,6 +164,9 @@ public class ExternalMetadataGatewayImpl implements ExternalMetadataGateway {
             } else {
                 LOGGER.warn("Google Books API returned status code: {} for {}", r.statusCode(), title);
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("Interrupted while fetching book info for {}", title, e);
         } catch (Exception e) {
             LOGGER.error("Error fetching book info from Google Books API", e);
         }
@@ -227,6 +230,9 @@ public class ExternalMetadataGatewayImpl implements ExternalMetadataGateway {
             } else {
                 LOGGER.warn("Error downloading image, status code: {} for URL: {}", r.statusCode(), url);
             }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            LOGGER.error("Interrupted while downloading cover image: {}", url, e);
         } catch (Exception e) {
             LOGGER.error("Error downloading cover image: {}", url, e);
         }

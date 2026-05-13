@@ -1483,6 +1483,9 @@ public class BookLibraryGui extends JFrame {
                         JOptionPane.showMessageDialog(BookLibraryGui.this, messages.getString("msg.download_success"));
                         // Update book path if it was empty
                         // Note: Book is immutable in some aspects, but we might want to refresh view
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        LOGGER.error("Download interrupted", e);
                     } catch (Exception e) {
                         LOGGER.error("Download failed", e);
                         JOptionPane.showMessageDialog(BookLibraryGui.this, messages.getString("error.download_failed") + ": " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
