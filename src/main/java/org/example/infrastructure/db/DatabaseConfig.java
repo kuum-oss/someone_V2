@@ -21,7 +21,7 @@ public class DatabaseConfig {
                 LOGGER.error("Unable to find application.properties");
             } else {
                 properties.load(input);
-                setupDataSource();
+                // setupDataSource() called lazily in getConnection() or explicitly in setDataSource()
             }
         } catch (IOException e) {
             LOGGER.error("Error loading application.properties", e);
@@ -49,7 +49,21 @@ public class DatabaseConfig {
     }
 
     public static Connection getConnection() throws SQLException {
+        if (dataSource == null) {
+            setupDataSource();
+        }
         return dataSource.getConnection();
+    }
+
+    public static void setDataSource(BasicDataSource customDataSource) {
+        if (dataSource != null && dataSource != customDataSource) {
+            try {
+                dataSource.close();
+            } catch (SQLException e) {
+                LOGGER.error("Error closing old datasource", e);
+            }
+        }
+        dataSource = customDataSource;
     }
 
     public static String getProperty(String key) {

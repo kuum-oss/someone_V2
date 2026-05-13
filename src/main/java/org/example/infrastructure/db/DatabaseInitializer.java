@@ -13,6 +13,19 @@ public class DatabaseInitializer {
     private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseInitializer.class);
 
     public static void initialize() {
+        try (Connection conn = DatabaseConfig.getConnection();
+             Statement stmt = conn.createStatement()) {
+            
+            LOGGER.info("Initializing database using current DataSource");
+            setupTables(stmt);
+            LOGGER.info("Tables checked/created successfully.");
+        } catch (SQLException e) {
+            LOGGER.warn("Failed to initialize via DataSource: {}. Falling back to manual initialization.", e.getMessage());
+            manualInitialize();
+        }
+    }
+
+    private static void manualInitialize() {
         String baseUrl = System.getenv("DB_URL") != null ? System.getenv("DB_URL") : DatabaseConfig.getProperty("db.url");
         String dbName = System.getenv("DB_NAME") != null ? System.getenv("DB_NAME") : DatabaseConfig.getProperty("db.name");
         String user = System.getenv("DB_USER") != null ? System.getenv("DB_USER") : DatabaseConfig.getProperty("db.user");
@@ -71,6 +84,7 @@ public class DatabaseInitializer {
     }
 
     private static void setupTables(Statement stmt) throws SQLException {
+        Connection conn = stmt.getConnection();
         String createUsersTable = "CREATE TABLE IF NOT EXISTS users (" +
                 "id INT AUTO_INCREMENT PRIMARY KEY," +
                 "email VARCHAR(255) NOT NULL UNIQUE," +
@@ -94,14 +108,14 @@ public class DatabaseInitializer {
                 "cover MEDIUMBLOB," +
                 "author_photo MEDIUMBLOB," +
                 "file_path VARCHAR(512)," +
-                "original_name VARCHAR(255) NOT NULL," +
+                "original_name VARCHAR(255) NOT NULL DEFAULT ''," +
                 "file_size BIGINT NOT NULL DEFAULT 0," +
                 "file_content LONGBLOB," +
                 "is_public BOOLEAN NOT NULL DEFAULT FALSE," +
                 "price INT NOT NULL DEFAULT 0," +
-                "book_type ENUM('ELECTRONIC', 'PHYSICAL') NOT NULL DEFAULT 'ELECTRONIC'," +
+                "book_type VARCHAR(20) NOT NULL DEFAULT 'ELECTRONIC'," +
                 "is_available BOOLEAN NOT NULL DEFAULT TRUE," +
-                "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
+                "CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE" +
                 ")";
         stmt.executeUpdate(createBooksTable);
 
@@ -226,7 +240,10 @@ public class DatabaseInitializer {
         } catch (SQLException ignored) {}
 
         try {
-            stmt.execute("SET GLOBAL max_allowed_packet=67108864");
+            // H2 doesn't support SET GLOBAL max_allowed_packet
+            if (!conn.getMetaData().getDatabaseProductName().equals("H2")) {
+                stmt.execute("SET GLOBAL max_allowed_packet=67108864");
+            }
         } catch (SQLException e) {
             LOGGER.warn("Could not set GLOBAL max_allowed_packet: {}. This might require SUPER privileges.", e.getMessage());
         }
