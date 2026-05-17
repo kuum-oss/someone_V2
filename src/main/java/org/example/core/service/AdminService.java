@@ -1,6 +1,7 @@
 package org.example.core.service;
 
 import org.example.core.entity.Book;
+import org.example.core.entity.StoredBook;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -79,5 +80,30 @@ public class AdminService {
         }
         storageService.deleteBook(bookId);
         LOGGER.info("Admin {} deleted book with ID {} from shop", authService.getCurrentUser().getEmail(), bookId);
+    }
+
+    public StoredBook getStoredBook(Integer id) {
+        if (!isAdmin()) {
+            throw new SecurityException("Access denied: Admin rights required.");
+        }
+        return bookRepository.findById(id).orElse(null);
+    }
+
+    public void updateBook(Integer id, String title, String author, String genre, String language, String year, String description, int price, org.example.core.entity.StoredBook.BookType bookType) {
+        if (!isAdmin()) {
+            throw new SecurityException("Access denied: Admin rights required.");
+        }
+        bookRepository.findById(id).ifPresent(book -> {
+            book.setTitle(title);
+            book.setAuthor(author);
+            book.setGenre(genre);
+            book.setLanguage(language);
+            book.setYear(year);
+            book.setDescription(description);
+            book.setPrice(price);
+            book.setBookType(bookType);
+            bookRepository.update(book);
+            LOGGER.info("Admin {} updated book with ID {}", authService.getCurrentUser().getEmail(), id);
+        });
     }
 }

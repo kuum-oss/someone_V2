@@ -23,6 +23,7 @@ public class BookDetailsPanel extends JPanel {
     private final JButton youtubeButton;
     private final JButton buyButton;
     private final JButton previewButton;
+    private final JButton editButton;
     private ResourceBundle messages;
     private Book currentBook;
     private boolean isAdmin;
@@ -79,6 +80,8 @@ public class BookDetailsPanel extends JPanel {
         previewButton.setVisible(false);
         previewButton.setBackground(new Color(70, 130, 180));
         previewButton.setForeground(Color.WHITE);
+        editButton = new JButton(messages.getString("button.edit"));
+        editButton.setVisible(false);
         try {
             java.net.URL iconUrl = getClass().getResource("/icons/youtube.png");
             if (iconUrl != null) {
@@ -95,12 +98,13 @@ public class BookDetailsPanel extends JPanel {
         photos.add(coverLabel);
         photos.add(authorPhotoLabel);
 
-        JPanel buttonPanel = new JPanel(new GridLayout(5, 1, 0, 5));
+        JPanel buttonPanel = new JPanel(new GridLayout(6, 1, 0, 5));
         buttonPanel.add(buyButton);
         buttonPanel.add(previewButton);
         buttonPanel.add(copyButton);
         buttonPanel.add(descriptionButton);
         buttonPanel.add(youtubeButton);
+        buttonPanel.add(editButton);
 
         JPanel centerPanel = new JPanel(new BorderLayout());
         centerPanel.add(new JScrollPane(infoArea), BorderLayout.NORTH);
@@ -109,6 +113,10 @@ public class BookDetailsPanel extends JPanel {
 
         add(photos, BorderLayout.NORTH);
         add(centerPanel, BorderLayout.CENTER);
+    }
+
+    public Book getCurrentBook() {
+        return currentBook;
     }
 
     public void updateDetails(Book book) {
@@ -268,6 +276,17 @@ public class BookDetailsPanel extends JPanel {
 
     public void setBuyButtonVisible(boolean visible) {
         buyButton.setVisible(visible);
+    }
+
+    public void setEditButtonVisible(boolean visible) {
+        editButton.setVisible(visible);
+    }
+
+    public void setEditAction(java.awt.event.ActionListener action) {
+        for (java.awt.event.ActionListener al : editButton.getActionListeners()) {
+            editButton.removeActionListener(al);
+        }
+        editButton.addActionListener(action);
     }
 
     public void setPreviewButtonVisible(boolean visible) {

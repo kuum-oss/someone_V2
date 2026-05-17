@@ -83,6 +83,7 @@ public class BookLibraryGui extends JFrame {
     private JToggleButton gridViewButton;
 
     private BookDetailsPanel detailsPanel;
+    private Book lastSelectedBook;
     private JTextField searchField;
     private JComboBox<String> groupModeCombo;
 
@@ -169,7 +170,10 @@ public class BookLibraryGui extends JFrame {
         if (physicalShopItem != null) physicalShopItem.setVisible(authenticated);
         
         boolean isAdmin = state.isAdmin();
-        if (detailsPanel != null) detailsPanel.setAdmin(isAdmin);
+        if (detailsPanel != null) {
+            detailsPanel.setAdmin(isAdmin);
+            detailsPanel.setEditButtonVisible(isAdmin);
+        }
         if (adminMenu != null) adminMenu.setVisible(isAdmin);
         if (adminDashboardItem != null) {
             adminDashboardItem.setVisible(isAdmin);
@@ -471,6 +475,12 @@ public class BookLibraryGui extends JFrame {
                     dialog.setVisible(true);
                 }
 
+            }
+        });
+        detailsPanel.setEditAction(e -> {
+            Book book = detailsPanel.getCurrentBook();
+            if (book != null) {
+                editBook(book);
             }
         });
 
@@ -967,6 +977,7 @@ public class BookLibraryGui extends JFrame {
     }
 
     private void openBook(Book book) {
+        lastSelectedBook = book;
         if (state.getMode() == ViewMode.SHOP) {
             buyBook(book);
             return;
@@ -1017,6 +1028,20 @@ public class BookLibraryGui extends JFrame {
                     messages.getString("error.title"),
                     JOptionPane.ERROR_MESSAGE);
         }
+    }
+
+    private void editBook(Book book) {
+        if (book == null || book.getDatabaseId() == null) {
+            JOptionPane.showMessageDialog(this, "Книга не выбрана или не найдена в базе данных.");
+            return;
+        }
+        org.example.core.entity.StoredBook storedBook = adminService.getStoredBook(book.getDatabaseId());
+        if (storedBook == null) {
+            JOptionPane.showMessageDialog(this, "Книга не найдена в базе данных.");
+            return;
+        }
+        org.example.infrastructure.ui.dialogs.EditBookDialog dialog = new org.example.infrastructure.ui.dialogs.EditBookDialog(this, storedBook, adminService, messages);
+        dialog.setVisible(true);
     }
 
     private void copyToClipboard(String text) {
