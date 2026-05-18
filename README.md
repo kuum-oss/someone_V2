@@ -6,6 +6,7 @@
 ![License](https://img.shields.io/github/license/kuum-oss/someone?style=flat-square)
 ![Top language](https://img.shields.io/github/languages/top/kuum-oss/someone?style=flat-square)
 ![Release](https://img.shields.io/github/v/release/kuum-oss/someone?style=flat-square)
+[![Quality Gate Status](https://sonarcloud.io/api/project_badges/measure?project=kuum-oss_someone_V2&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=kuum-oss_someone_V2)
 
 ### О проекте
 **someone** — это универсальное решение для управления вашей коллекцией книг. Приложение сочетает в себе мощный десктопный клиент (Java Swing + FlatLaf) для организации файлов и современный веб-интерфейс (Javalin + FreeMarker) для доступа к библиотеке через браузер.
