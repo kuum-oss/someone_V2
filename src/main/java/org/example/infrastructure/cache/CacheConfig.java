@@ -11,7 +11,7 @@ public class CacheConfig {
     // Кэш для отдельных книг по ID (включая метаданные и обложки)
     private static final Cache<Integer, StoredBook> bookCache = Caffeine.newBuilder()
             .expireAfterWrite(10, TimeUnit.MINUTES)
-            .maximumSize(500)
+            .maximumSize(50000000)
             .build();
 
     public static Cache<Integer, StoredBook> getBookCache() {
