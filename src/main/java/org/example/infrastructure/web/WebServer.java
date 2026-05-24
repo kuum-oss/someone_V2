@@ -530,7 +530,11 @@ public class WebServer {
             List<StoredBook> owned = bookRepository.findOwnedBooksByUserId(user.getId());
             if(owned.stream().noneMatch(b->b.getId()==id) && !user.isAdmin()){ ctx.status(403).result("Доступ запрещен"); return;}
             byte[] content = bookRepository.getBookContent(id);
-            if(content!=null){ bookRepository.findById(id).ifPresent(book -> ctx.contentType("application/octet-stream").header("Content-Disposition","attachment; filename=\""+book.getOriginalName()+"\"").result(content)); }
+            if(content!=null){ bookRepository.findById(id).ifPresent(book -> {
+                ctx.contentType("application/octet-stream")
+                   .header("Content-Disposition","attachment; filename=\""+book.getOriginalName()+"\"")
+                   .result(new java.io.ByteArrayInputStream(content));
+            }); }
         });
 
         // --- Магазин ---

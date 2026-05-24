@@ -70,7 +70,7 @@ public class Main {
         LOGGER.info("Starting Web Server mode...");
         try {
             WebServer server = new WebServer();
-            int actualPort = server.start(8080);
+            int actualPort = server.start(8081);
             
             // Автоматически открываем браузер, если мы не в безголовом режиме
             if (!java.awt.GraphicsEnvironment.isHeadless()) {
