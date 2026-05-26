@@ -30,6 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.StringWriter;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class WebServer {
     private static final Logger LOGGER = LoggerFactory.getLogger(WebServer.class);
@@ -49,6 +50,7 @@ public class WebServer {
     private final MetadataGateway metadataGateway;
     private final AdminService adminService;
     private final FileStorageService storageService;
+    private final Map<String, Long> downloadLock = new ConcurrentHashMap<>();
 
     private final ResourceBundle messages;
     private final Configuration freeMarkerCfg;
@@ -198,14 +200,31 @@ public class WebServer {
             }
         });
 
-        // Security headers
-        app.after(ctx -> {
-            ctx.header("X-Content-Type-Options", "nosniff");
-            ctx.header("X-Frame-Options", "DENY");
-            ctx.header("X-XSS-Protection", "1; mode=block");
-            ctx.header("Strict-Transport-Security", "max-age=31536000; includeSubDomains");
-            ctx.header("Content-Security-Policy", "default-src 'self'; img-src 'self' data: https://via.placeholder.com; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'");
+        app.before(ctx -> {
+            if (!ctx.method().equals(HandlerType.POST)) {
+                return;
+            }
+
+            String path = ctx.path();
+            if (path.startsWith("/book/") && path.contains("/download")) {
+                return; // download не трогаем
+            }
+
+            String referer = ctx.header("Referer");
+            if (referer == null) {
+                return;
+            }
+
+            String host = ctx.header("Host");
+
+            if (host != null && !referer.contains(host)) {
+                ctx.status(403).result("CSRF blocked");
+                ctx.result("");
+                ctx.skipRemainingHandlers(); // если есть, иначе return (см. ниже)
+                return;
+            }
         });
+
 
         // CSRF check
         app.before(ctx -> {
@@ -245,15 +264,15 @@ public class WebServer {
         app.get("/", ctx -> {
             User user = ctx.sessionAttribute("currentUser");
             if (user == null) { ctx.redirect("/shop"); return; }
-            
+
             String category = ctx.queryParamAsClass("category", String.class).getOrDefault("all");
             Map<String, Object> model = createModel(ctx);
-            
+
             List<StoredBook> ownedBooks = bookRepository.findOwnedBooksByUserId(user.getId());
             List<ReadingProgress> progressList = readingService.getAllUserProgress(user.getId());
             Map<Integer, ReadingProgress> progressMap = progressList.stream()
                     .collect(java.util.stream.Collectors.toMap(ReadingProgress::getBookId, rp -> rp));
-            
+
             List<StoredBook> filteredBooks;
             switch (category) {
                 case "favorite":
@@ -276,7 +295,7 @@ public class WebServer {
                     filteredBooks = ownedBooks;
                     break;
             }
-            
+
             model.put("books", filteredBooks);
             model.put("progressMap", progressMap);
             model.put("currentCategory", category);
@@ -288,7 +307,7 @@ public class WebServer {
             if (user == null) { ctx.status(401); return; }
             int bookId = Integer.parseInt(ctx.formParam("bookId"));
             readingService.toggleFavorite(user.getId(), bookId);
-            
+
             String category = ctx.queryParamAsClass("category", String.class).getOrDefault("all");
             ctx.redirect("/?category=" + category);
         });
@@ -299,7 +318,7 @@ public class WebServer {
             Map<String, Object> model = createModel(ctx);
             List<ReadingProgress> readingList = readingService.getUserReadingList(user.getId(), 5);
             model.put("readingList", readingList);
-            
+
             List<StoredBook> books = new ArrayList<>();
             for (ReadingProgress rp : readingList) {
                 bookRepository.findById(rp.getBookId()).ifPresent(books::add);
@@ -315,14 +334,14 @@ public class WebServer {
             bookRepository.findById(id).ifPresentOrElse(book -> {
                 boolean isOwned = bookRepository.findOwnedBooksByUserId(user.getId()).stream().anyMatch(b -> b.getId() == id) || user.isAdmin();
                 if (!isOwned) { ctx.status(403).result("Доступ запрещен"); return; }
-                
+
                 Map<String, Object> model = createModel(ctx);
                 model.put("book", book);
                 model.put("bookId", id);
                 ReadingProgress progress = readingService.getProgress(user.getId(), id).orElse(new ReadingProgress());
                 model.put("progress", progress);
                 model.put("isFavorite", progress.isFavorite());
-                
+
                 // Используем Tika для извлечения текста из любого формата
                 byte[] contentBytes = bookRepository.getBookContent(id);
                 String contentText = "";
@@ -337,7 +356,7 @@ public class WebServer {
                     contentText = book.getDescription();
                 }
                 model.put("bookContent", contentText);
-                
+
                 render(ctx, "templates/reader.ftl", model);
             }, () -> ctx.status(404).result("Книга не найдена"));
         });
@@ -490,7 +509,7 @@ public class WebServer {
                         List<Order> userOrders = orderRepository.findByUserIdAndBookId(user.getId(), id);
                         if (book.getBookType() == StoredBook.BookType.PHYSICAL) {
                             // Физическая книга "принадлежит" пользователю, только если есть активный заказ
-                            isOwned = userOrders.stream().anyMatch(o -> 
+                            isOwned = userOrders.stream().anyMatch(o ->
                                 o.getStatus() == Order.Status.PENDING || o.getStatus() == Order.Status.SHIPPED);
                         } else {
                             // Электронная книга принадлежит, если есть любой заказ (кроме CANCELLED, если такая логика есть)
@@ -524,17 +543,57 @@ public class WebServer {
         });
 
         app.get("/book/{id}/download", ctx -> {
+
+            // 1. auth check
             User user = ctx.sessionAttribute("currentUser");
-            if(user==null){ctx.redirect("/login"); return;}
+            if (user == null) {
+                ctx.status(401).result("Unauthorized");
+                return;
+            }
+
             int id = Integer.parseInt(ctx.pathParam("id"));
-            List<StoredBook> owned = bookRepository.findOwnedBooksByUserId(user.getId());
-            if(owned.stream().noneMatch(b->b.getId()==id) && !user.isAdmin()){ ctx.status(403).result("Доступ запрещен"); return;}
+
+            // 2. anti double-click / duplicate request lock
+            String key = ctx.ip() + ":" + id;
+            long now = System.currentTimeMillis();
+
+            Long last = downloadLock.get(key);
+            if (last != null && now - last < 2000) {
+                System.out.println("DUPLICATE DOWNLOAD BLOCKED");
+
+                ctx.status(429);
+                ctx.result("Too many download requests. Please wait.");
+                return;
+            }
+
+            downloadLock.put(key, now);
+
+            // 3. load metadata first
+            StoredBook book = bookRepository.findById(id)
+                    .orElse(null);
+
+            if (book == null) {
+                ctx.status(404).result("Book not found");
+                return;
+            }
+
+            // 4. load file content
             byte[] content = bookRepository.getBookContent(id);
-            if(content!=null){ bookRepository.findById(id).ifPresent(book -> {
-                ctx.contentType("application/octet-stream")
-                   .header("Content-Disposition","attachment; filename=\""+book.getOriginalName()+"\"")
-                   .result(new java.io.ByteArrayInputStream(content));
-            }); }
+
+            if (content == null || content.length == 0) {
+                ctx.status(404).result("File not found");
+                return;
+            }
+
+            // 5. headers for download
+            ctx.contentType("application/epub+zip");
+            ctx.header("Content-Disposition",
+                    "attachment; filename=\"" + book.getOriginalName() + "\"");
+
+            // 6. IMPORTANT: do NOT set Content-Length manually
+            ctx.result(content);
+
+            System.out.println("DOWNLOAD OK: " + id);
         });
 
         // --- Магазин ---
@@ -556,7 +615,7 @@ public class WebServer {
             if(user==null){ctx.redirect("/login");return;}
             int bookId=Integer.parseInt(ctx.formParam("bookId"));
             bookRepository.findById(bookId).ifPresent(book -> {
-                if(book.getBookType()==StoredBook.BookType.PHYSICAL){ 
+                if(book.getBookType()==StoredBook.BookType.PHYSICAL){
                     ctx.redirect("/book/" + book.getId() + "/order");
                 }
                 else {
@@ -582,13 +641,13 @@ public class WebServer {
             int id = Integer.parseInt(ctx.pathParam("id"));
             bookRepository.findById(id).ifPresentOrElse(book -> {
                 if(book.getBookType() != StoredBook.BookType.PHYSICAL) { ctx.redirect("/shop"); return; }
-                
+
                 int hour = ctx.queryParamAsClass("hour", Integer.class).getOrDefault(java.time.LocalDateTime.now().getHour() + 1);
                 int duration = ctx.queryParamAsClass("duration", Integer.class).getOrDefault(libraryService.getSettings().getDefaultDurationHours());
-                
+
                 java.time.LocalDateTime start = java.time.LocalDateTime.now().withHour(hour % 24).withMinute(0).withSecond(0).withNano(0);
                 java.time.LocalDateTime end = start.plusHours(duration);
-                
+
                 Set<String> occupied = libraryService.getOccupiedSeats(start, end);
                 LibrarySettings settings = libraryService.getSettings();
 
@@ -599,7 +658,7 @@ public class WebServer {
                 model.put("defaultDuration", duration);
                 model.put("currentHour", hour - 1);
                 model.put("occupiedJson", "[\"" + String.join("\",\"", occupied) + "\"]");
-                
+
                 render(ctx, "templates/seat_selection.ftl", model);
             }, () -> ctx.status(404).result("Book not found"));
         });
@@ -607,12 +666,12 @@ public class WebServer {
         app.post("/shop/buy/physical", ctx -> {
             User user = ctx.sessionAttribute("currentUser");
             if(user == null) { ctx.status(401); return; }
-            
+
             String bId = ctx.formParam("bookId");
             String seat = ctx.formParam("seatNumber");
             String hStr = ctx.formParam("hour");
             String dStr = ctx.formParam("duration");
-            
+
             System.out.println("[DEBUG] Web Order: bookId=" + bId + ", seat=" + seat + ", hour=" + hStr + ", duration=" + dStr);
 
             if (bId == null || seat == null || hStr == null || dStr == null) {
@@ -624,10 +683,10 @@ public class WebServer {
             int bookId = Integer.parseInt(bId);
             int hour = Integer.parseInt(hStr);
             int duration = Integer.parseInt(dStr);
-            
+
             java.time.LocalDateTime start = java.time.LocalDateTime.now().withHour(hour % 24).withMinute(0).withSecond(0).withNano(0);
             java.time.LocalDateTime end = start.plusHours(duration);
-            
+
             orderService.placeOrder(user.getId(), bookId, seat, start, end);
             ctx.redirect("/shop");
         });
@@ -734,7 +793,7 @@ public class WebServer {
             if (user != null && user.isAdmin()) {
                 int reviewId = Integer.parseInt(ctx.formParam("reviewId"));
                 readingService.deleteReview(reviewId);
-                
+
                 String bookId = ctx.formParam("bookId");
                 if (bookId != null) {
                     ctx.redirect("/book/" + bookId);
@@ -790,13 +849,13 @@ public class WebServer {
         Map<String,Object> model = new HashMap<>();
         model.put("currentUser",ctx.sessionAttribute("currentUser"));
         model.put("messages", messages);
-        
+
         Boolean notEnoughPoints = ctx.sessionAttribute("error_not_enough_points");
         if (notEnoughPoints != null && notEnoughPoints) {
             model.put("error_not_enough_points", true);
             ctx.consumeSessionAttribute("error_not_enough_points");
         }
-        
+
         return model;
     }
 

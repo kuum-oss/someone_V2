@@ -48,14 +48,7 @@ public class WebServer {
         });
 
         // Маршрут для скачування файлів з перевіркою прав
-        app.get("/book/{id}/download", ctx -> {
-            int id = Integer.parseInt(ctx.pathParam("id"));
-            byte[] content = bookRepository.getBookContent(id);
-            ctx.contentType("application/octet-stream")
-               .header("Content-Disposition", "attachment; filename=\"book.pdf\"")
-               .result(content);
-        });
-    }
+       
 }
 ```
 

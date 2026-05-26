@@ -248,7 +248,11 @@
                 <#if isOwned?? && isOwned>
                     <#if book.bookType == "ELECTRONIC">
                         <div style="display: flex; gap: 12px; align-items: center;">
-                            <a href="/book/${book.id?c}/download" class="btn btn-secondary" style="padding: 14px 24px;">📥 Скачать</a>
+                            <form method="GET" action="/book/${book.id?c}/download">
+                                <button type="submit" class="btn btn-secondary">
+                                    📥 Скачать
+                                </button>
+                            </form>
                             <a href="/reader/${book.id?c}" class="btn btn-primary" style="padding: 14px 28px;">📖 Читать онлайн</a>
                             <form action="/library/favorite/toggle" method="POST" style="margin: 0;">
                                 <input type="hidden" name="bookId" value="${book.id?c}">
