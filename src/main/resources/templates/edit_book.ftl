@@ -1,17 +1,19 @@
 <#import "layout.ftl" as layout>
 
-<@layout.main_layout title="Редактирование книги">
-    <h1>📝 Редактирование книги: ${book.title}</h1>
-    
+<@layout.main_layout title="Редагування книги">
+    <h1>📝 Редагування книги: ${book.title}</h1>
+
     <div class="card" style="max-width: 800px; margin: 0 auto; padding: 2rem; background: #fff; border-radius: 12px; border: 1px solid var(--border-color);">
         <form action="/admin/book/edit" method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 1.5rem;">
             <input type="hidden" name="id" value="${book.id?c}">
-            
+
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+
                 <div class="form-group">
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Название</label>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Назва</label>
                     <input type="text" name="title" value="${book.title}" required style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
+
                 <div class="form-group">
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Автор</label>
                     <input type="text" name="author" value="${book.author!""}" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
@@ -21,54 +23,56 @@
                     <input type="text" name="genre" value="${book.genre!""}" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
                 <div class="form-group">
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Язык</label>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Мова</label>
                     <input type="text" name="language" value="${book.language!""}" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
                 <div class="form-group">
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Год</label>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Рік</label>
                     <input type="text" name="year" value="${book.year!""}" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
                 <div class="form-group">
                     <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Тип книги</label>
                     <select name="bookType" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                        <option value="ELECTRONIC" <#if book.bookType == "ELECTRONIC">selected</#if>>Электронная</option>
-                        <option value="PHYSICAL" <#if book.bookType == "PHYSICAL">selected</#if>>Физическая</option>
+                        <option value="ELECTRONIC" <#if book.bookType == "ELECTRONIC">selected</#if>>Електронна</option>
+                        <option value="PHYSICAL" <#if book.bookType == "PHYSICAL">selected</#if>>Фізична</option>
                     </select>
+
                 </div>
                 <div class="form-group">
-                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Стоимость (баллы)</label>
+                    <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Вартість (бали)</label>
                     <input type="number" name="price" value="${(book.price > 0)?string(book.price?string, "1")}" min="0" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">
-                    <small style="color: #666; font-size: 0.8rem;">Если 0, для электронных книг будет использоваться цена 1 поинт.</small>
+                    <small style="color: #666; font-size: 0.8rem;">Якщо 0, для електронних книг буде використовуватися ціна 1 поінт.</small>
                 </div>
             </div>
 
             <div class="form-group">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Описание</label>
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Опис</label>
                 <textarea name="description" rows="4" style="width: 100%; padding: 0.5rem; border: 1px solid #ddd; border-radius: 4px;">${book.description!""}</textarea>
             </div>
 
             <div class="form-group" style="padding: 1rem; background: #f8f9fa; border-radius: 8px;">
-                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Обложка (JPG)</label>
+                <label style="display: block; font-weight: 600; margin-bottom: 0.5rem;">Обкладинка (JPG)</label>
                 <div style="display: flex; gap: 1rem; align-items: center;">
                     <div style="width: 100px; height: 140px; background: #eee; border-radius: 4px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
                         <#if book.cover??>
                             <img src="/book/${book.id?c}/cover" style="width: 100%; height: 100%; object-fit: cover;">
                         <#else>
-                            <span style="font-size: 10px; color: #888;">Нет обложки</span>
+                            <span style="font-size: 10px; color: #888;">Немає обкладинки</span>
                         </#if>
                     </div>
                     <div style="flex: 1;">
                         <input type="file" name="coverFile" accept="image/jpeg,image/jpg" style="width: 100%;">
-                        <p style="font-size: 12px; color: #666; margin-top: 5px;">Выберите новый JPG файл, чтобы заменить текущую обложку.</p>
+
+                        <p style="font-size: 12px; color: #666; margin-top: 5px;">Виберіть новий JPG файл, щоб замінити поточну обкладинку.</p>
                     </div>
                 </div>
             </div>
 
             <div style="display: flex; gap: 10px; justify-content: space-between; align-items: center; margin-top: 1rem;">
-                <button type="button" class="btn btn-secondary" style="color: #dc2626; border-color: #fecaca;" onclick="deleteBook()">Удалить книгу</button>
+                <button type="button" class="btn btn-secondary" style="color: #dc2626; border-color: #fecaca;" onclick="deleteBook()">Видалити книгу</button>
                 <div style="display: flex; gap: 10px;">
-                    <a href="/shop" class="btn btn-secondary">Отмена</a>
-                    <button type="submit" class="btn btn-primary" style="padding: 0.5rem 2rem;">Сохранить изменения</button>
+                    <a href="/shop" class="btn btn-secondary">Скасувати</a>
+                    <button type="submit" class="btn btn-primary" style="padding: 0.5rem 2rem;">Зберегти зміни</button>
                 </div>
             </div>
         </form>
@@ -76,7 +80,7 @@
 
     <script>
         function deleteBook() {
-            if (confirm('Вы уверены, что хотите навсегда удалить эту книгу из магазина?')) {
+            if (confirm('Ви впевнені, що хочете назавжди видалити цю книгу з магазину?')) {
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '/admin/book/delete';
@@ -86,6 +90,7 @@
                 input.value = '${book.id?c}';
                 form.appendChild(input);
                 document.body.appendChild(form);
+
                 form.submit();
             }
         }

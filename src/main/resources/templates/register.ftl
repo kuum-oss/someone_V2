@@ -1,6 +1,6 @@
 <#import "layout.ftl" as layout>
 
-<@layout.main_layout title="Регистрация">
+<@layout.main_layout title="Реєстрація">
     <div style="max-width: 400px; margin: 5rem auto; font-family: 'Segoe UI', Tahoma, sans-serif;">
         <div class="card" style="
             padding: 2rem;
@@ -10,8 +10,9 @@
             transition: transform 0.2s;
         "
              onmouseover="this.style.transform='translateY(-5px)';"
-             onmouseout="this.style.transform='translateY(0)';">
-            <h2 style="text-align:center; margin-bottom: 1.5rem; color: #333;">Регистрация</h2>
+             onmouseout="this.style.transform='translateY(0)';"
+        >
+            <h2 style="text-align:center; margin-bottom: 1.5rem; color: #333;">Реєстрація</h2>
 
             <#if error??>
                 <div class="alert alert-error" style="
@@ -62,12 +63,12 @@
                 "
                         onmouseover="this.style.backgroundColor='#0056b3'; this.style.transform='scale(1.03)';"
                         onmouseout="this.style.backgroundColor='#007BFF'; this.style.transform='scale(1)';">
-                    Зарегистрироваться
+                    Зареєструватися
                 </button>
             </form>
 
             <p style="text-align: center; margin-top: 1.5rem; color: #666;">
-                Уже есть аккаунт? <a href="/login" style="color:#007BFF; text-decoration:none;">Войти</a>
+                Вже є акаунт? <a href="/login" style="color:#007BFF; text-decoration:none;">Увійти</a>
             </p>
         </div>
     </div>

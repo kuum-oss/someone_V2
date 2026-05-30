@@ -64,7 +64,7 @@ public class WebServer {
     private static final int MAX_REQUESTS_PER_MINUTE = 60;
     private static final long MIN_INTERVAL_MS = 100;
     private static final int MAX_ABUSE_POINTS = 5;
-    private static final long BLOCK_DURATION_MS = 300_000; // 5 minutes
+    private static final long BLOCK_DURATION_MS =1; // 5 minutes
     private static final long MAX_BODY_SIZE = 1_000_000; // 1MB
 
     public WebServer() {
@@ -469,7 +469,7 @@ public class WebServer {
                     ctx.redirect("/");
                 } else {
                     Map<String,Object> model = createModel(ctx);
-                    model.put("error","Неверный email или пароль");
+                    model.put("error","Невірна електронна адреса або пароль");
                     render(ctx,"templates/login.ftl",model);
                 }
             } catch(Exception e) {

@@ -5,21 +5,21 @@
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; margin-bottom: 1.5rem;">
             <h1>🛒 Магазин книг</h1>
             <div class="stats" style="color: var(--secondary-color); font-size: 14px;">
-                Найдено книг: ${totalBooks!0}
+                Знайдено книг: ${totalBooks!0}
             </div>
         </div>
-        
+
         <form action="/shop" method="GET" class="filters-container" style="background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid var(--border-color); display: flex; flex-direction: column; gap: 1rem;">
             <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
                 <div class="filter-group" style="flex: 2; min-width: 200px;">
-                    <label for="q" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Поиск</label>
-                    <input type="text" name="q" id="q" value="${query!""}" placeholder="Название или автор..." class="btn btn-secondary" style="width: 100%; text-align: left; padding: 8px 12px; height: auto; box-sizing: border-box;">
+                    <label for="q" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Пошук</label>
+                    <input type="text" name="q" id="q" value="${query!""}" placeholder="Назва або автор..." class="btn btn-secondary" style="width: 100%; text-align: left; padding: 8px 12px; height: auto; box-sizing: border-box;">
                 </div>
 
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
                     <label for="genre" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Жанр</label>
                     <select name="genre" id="genre" class="btn btn-secondary" style="width: 100%; padding: 8px 12px; height: auto;">
-                        <option value="">Все жанры</option>
+                        <option value="">Усі жанри</option>
                         <#if genres??>
                             <#list genres as g>
                                 <option value="${g}" <#if selectedGenre?? && selectedGenre == g>selected</#if>>${g}</option>
@@ -27,11 +27,11 @@
                         </#if>
                     </select>
                 </div>
-                
+
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
-                    <label for="language" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Язык</label>
+                    <label for="language" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Мова</label>
                     <select name="language" id="language" class="btn btn-secondary" style="width: 100%; padding: 8px 12px; height: auto;">
-                        <option value="">Все языки</option>
+                        <option value="">Усі мови</option>
                         <#if languages??>
                             <#list languages as l>
                                 <option value="${l}" <#if selectedLanguage?? && selectedLanguage == l>selected</#if>>${l}</option>
@@ -41,34 +41,34 @@
                 </div>
 
                 <div class="filter-group" style="flex: 1; min-width: 150px;">
-                    <label for="sort" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Сортировка</label>
+                    <label for="sort" style="display: block; font-size: 12px; color: var(--secondary-color); margin-bottom: 4px;">Сортування</label>
                     <select name="sort" id="sort" class="btn btn-secondary" style="width: 100%; padding: 8px 12px; height: auto;">
-                        <option value="title" <#if sort?? && sort == "title">selected</#if>>По названию</option>
-                        <option value="author" <#if sort?? && sort == "author">selected</#if>>По автору</option>
-                        <option value="newest" <#if sort?? && sort == "newest">selected</#if>>Сначала новые</option>
+                        <option value="title" <#if sort?? && sort == "title">selected</#if>>За назвою</option>
+                        <option value="author" <#if sort?? && sort == "author">selected</#if>>За автором</option>
+                        <option value="newest" <#if sort?? && sort == "newest">selected</#if>>Спочатку нові</option>
                     </select>
                 </div>
             </div>
-            
+
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <a href="/shop" class="btn btn-secondary" style="padding: 8px 20px;">Сброс</a>
-                <button type="submit" class="btn btn-primary" style="padding: 8px 20px;">Найти</button>
+                <a href="/shop" class="btn btn-secondary" style="padding: 8px 20px;">Скинути</a>
+                <button type="submit" class="btn btn-primary" style="padding: 8px 20px;">Знайти</button>
             </div>
         </form>
     </div>
 
-    <p style="margin-top: -1rem; margin-bottom: 2rem; color: var(--secondary-color);">Здесь вы можете приобрести книги за поинты.</p>
+    <p style="margin-top: -1rem; margin-bottom: 2rem; color: var(--secondary-color);">Тут ви можете придбати книги за поінти.</p>
 
     <#if error_not_enough_points??>
         <div id="pointsModal" class="modal" style="display: block; position: fixed; z-index: 2000; left: 0; top: 0; width: 100%; height: 100%; overflow: auto; background-color: rgba(0,0,0,0.4); backdrop-filter: blur(4px);">
             <div class="modal-content" style="background-color: #fefefe; margin: 15% auto; padding: 2rem; border-radius: 16px; box-shadow: var(--shadow-lg); width: 400px; text-align: center; border: none; animation: staggerIn 0.3s ease-out;">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">💰</div>
-                <h2 style="color: var(--primary-color); margin-bottom: 1rem;">Недостаточно баллов</h2>
-                <p style="color: var(--secondary-color); margin-bottom: 2rem;">На вашем счету недостаточно поинтов для покупки этой книги. Хотите пополнить счет?</p>
+                <h2 style="color: var(--primary-color); margin-bottom: 1rem;">Недостатньо балів</h2>
+                <p style="color: var(--secondary-color); margin-bottom: 2rem;">На вашому рахунку недостатньо поінтів для купівлі цієї книги. Бажаєте поповнити рахунок?</p>
                 <div style="display: flex; gap: 12px; justify-content: center;">
-                    <button onclick="document.getElementById('pointsModal').style.display='none'" class="btn btn-secondary">Позже</button>
+                    <button onclick="document.getElementById('pointsModal').style.display='none'" class="btn btn-secondary">Пізніше</button>
                     <form action="/user/add-point" method="POST" style="margin: 0;">
-                        <button type="submit" class="btn btn-primary">Пополнить (+1)</button>
+                        <button type="submit" class="btn btn-primary">Поповнити (+1)</button>
                     </form>
                 </div>
             </div>
@@ -92,30 +92,30 @@
                             <#if book.cover??>
                                 <img src="/book/${book.id?c}/cover" alt="${book.title}">
                             <#else>
-                                Нет обложки
+                                Немає обкладинки
                             </#if>
                         </div>
 
                         <span class="badge ${book.bookType?lower_case}">${book.bookType}</span>
 
                         <h3 class="book-title">${book.title}</h3>
-                        <p class="book-author">${book.author!"Автор не указан"}</p>
+                        <p class="book-author">${book.author!"Автор не вказаний"}</p>
                         <div style="font-size: 12px; color: var(--secondary-color); margin-top: 4px;">
-                            <span>${book.genre!"Без жанра"}</span> • <span>${book.language!"Неизвестен"}</span>
+                            <span>${book.genre!"Без жанру"}</span> • <span>${book.language!"Невідома"}</span>
                         </div>
 
                         <div class="price-row">
                             <#if book.bookType == "ELECTRONIC">
-                                <div class="price">${(book.price > 0)?string(book.price?string, "1")} поинтов</div>
+                                <div class="price">${(book.price > 0)?string(book.price?string, "1")} поінтів</div>
                             <#else>
-                                <div class="price free">Бесплатно</div>
+                                <div class="price free">Безкоштовно</div>
                             </#if>
                             <div class="status">Доступна</div>
                         </div>
 
                         <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;">
                             <#if currentUser?? && currentUser.admin>
-                                <object><a href="/admin/book/edit/${book.id?c}" class="cta" style="background: var(--primary-color);">Редактировать</a></object>
+                                <object><a href="/admin/book/edit/${book.id?c}" class="cta" style="background: var(--primary-color);">Редагувати</a></object>
                             </#if>
                             <#if ownedIds?? && ownedIds?seq_contains(book.id)>
                                 <button class="cta" style="background: var(--success-color); cursor: default;" disabled>Уже куплено</button>
@@ -124,12 +124,12 @@
                                     <form action="/shop/buy" method="POST" style="margin: 0;" onsubmit="return confirm('${messages.getString('dialog.buy_book.confirm')?replace('{0}', (book.price > 0)?string(book.price?string, '1'))?js_string}');">
                                         <input type="hidden" name="bookId" value="${book.id?c}">
                                         <button type="submit" class="cta">
-                                            <#if book.bookType == "PHYSICAL">Заказать<#else>Купить</#if>
+                                            <#if book.bookType == "PHYSICAL">Замовити<#else>Купити</#if>
                                         </button>
                                     </form>
                                 </object>
                             <#else>
-                                <object><a href="/login" class="cta">Войти и <#if book.bookType == "PHYSICAL">заказать<#else>купить</#if></a></object>
+                                <object><a href="/login" class="cta">Увійти та <#if book.bookType == "PHYSICAL">замовити<#else>купити</#if></a></object>
                             </#if>
                         </div>
                     </a>
@@ -137,7 +137,7 @@
             </#list>
         <#else>
             <div class="empty" style="grid-column: 1 / -1; text-align: center; padding: 4rem; color: #999;">
-                <p>В магазине пока нет книг.</p>
+                <p>У магазині поки немає книг.</p>
             </div>
         </#if>
     </div>
@@ -150,7 +150,7 @@
                 <#if selectedGenre?? && selectedGenre != ""><#assign url = url + "&genre=${selectedGenre}"></#if>
                 <#if selectedLanguage?? && selectedLanguage != ""><#assign url = url + "&language=${selectedLanguage}"></#if>
                 <#if sort?? && sort != ""><#assign url = url + "&sort=${sort}"></#if>
-                
+
                 <a href="${url}" class="btn <#if currentPage == p>btn-primary<#else>btn-secondary</#if>" style="padding: 8px 14px;">
                     ${p}
                 </a>
@@ -160,7 +160,7 @@
 
     <#if currentUser??>
         <div style="margin-top: 3rem; text-align: center; padding: 2rem; background: #e9ecef; border-radius: 8px;">
-            <h3>Нужно больше поинтов?</h3>
+            <h3>Потрібно більше поінтів?</h3>
             <form action="/user/add-point" method="POST">
                 <button type="submit" class="btn btn-primary">+1 Point (Тест)</button>
             </form>

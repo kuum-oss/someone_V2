@@ -1,6 +1,6 @@
 <#import "layout.ftl" as layout>
 
-<@layout.main_layout title="Вход">
+<@layout.main_layout title="Вхід">
     <div style="max-width: 400px; margin: 5rem auto; font-family: 'Segoe UI', Tahoma, sans-serif;">
         <div class="card" style="
             padding: 2rem;
@@ -12,7 +12,7 @@
              onmouseover="this.style.transform='translateY(-5px)';"
              onmouseout="this.style.transform='translateY(0)';"
         >
-            <h2 style="text-align:center; margin-bottom: 1.5rem; color: #333;">Вход в систему</h2>
+            <h2 style="text-align:center; margin-bottom: 1.5rem; color: #333;">Вхід до системи</h2>
 
             <#if error??>
                 <div style="
@@ -36,7 +36,8 @@
                         border-radius: 8px;
                         border: 1px solid #ccc;
                         transition: border-color 0.2s;
-                    " onfocus="this.style.borderColor='#007BFF';" onblur="this.style.borderColor='#ccc';">
+                    " onfocus="this.style.borderColor='#007BFF';
+" onblur="this.style.borderColor='#ccc';">
                 </div>
 
                 <div style="margin-bottom: 1.5rem;">
@@ -63,12 +64,12 @@
                 "
                         onmouseover="this.style.backgroundColor='#0056b3'; this.style.transform='scale(1.03)';"
                         onmouseout="this.style.backgroundColor='#007BFF'; this.style.transform='scale(1)';">
-                    Войти
+                    Увійти
                 </button>
             </form>
 
             <p style="text-align: center; margin-top: 1.5rem; color: #666;">
-                Нет аккаунта? <a href="/register" style="color:#007BFF; text-decoration:none;">Зарегистрироваться</a>
+                Немає акаунта? <a href="/register" style="color:#007BFF; text-decoration:none;">Зареєструватися</a>
             </p>
         </div>
     </div>

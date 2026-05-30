@@ -1,8 +1,8 @@
 <#import "layout.ftl" as layout>
 
-<@layout.main_layout title="Панель управления">
+<@layout.main_layout title="Панель керування">
     <style>
-        /* 1. Заголовок и общая структура */
+        /* 1. Заголовок та загальна структура */
         .admin-header {
             margin-bottom: 32px;
         }
@@ -15,7 +15,7 @@
             gap: 12px;
         }
 
-        /* 2. Виджеты статистики */
+        /* 2. Віджети статистики */
         .stats-grid {
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
@@ -45,7 +45,7 @@
             margin-top: 8px;
         }
 
-        /* 3. Секции контента */
+        /* 3. Секції контенту */
         .admin-section {
             background: white;
             border-radius: 16px;
@@ -79,7 +79,7 @@
             border-color: var(--primary-color);
         }
 
-        /* 4. Стили таблицы пользователей */
+        /* 4. Стилі таблиці користувачів */
         .admin-table-wrapper {
             overflow-x: auto;
         }
@@ -104,7 +104,7 @@
         }
         .admin-table tr:hover { background: #f8fafc; }
 
-        /* Контейнер для аватара и ссылки */
+        /* Контейнер для аватара та посилання */
         .user-info-cell {
             display: flex;
             align-items: center;
@@ -130,7 +130,7 @@
             text-decoration: underline;
         }
 
-        /* Бейджи ролей */
+        /* Бейджі ролей */
         .role-badge {
             padding: 4px 8px;
             border-radius: 6px;
@@ -141,7 +141,7 @@
         .role-admin { background: #fee2e2; color: #dc2626; }
         .role-user { background: #f1f5f9; color: #475569; }
 
-        /* 5. Список уведомлений */
+        /* 5. Список сповіщень */
         .note-item {
             display: flex;
             justify-content: space-between;
@@ -153,7 +153,7 @@
         .note-message { font-weight: 500; color: #1e293b; }
         .note-date { font-size: 12px; color: #94a3b8; }
 
-        /* 6. Категории (вкладки) */
+        /* 6. Категорії (вкладки) */
         .admin-nav {
             display: flex;
             gap: 8px;
@@ -183,7 +183,7 @@
             color: white;
         }
 
-        /* 7. Отзывы */
+        /* 7. Відгуки */
         .review-card {
             padding: 20px;
             border-bottom: 1px solid var(--border-color);
@@ -200,52 +200,52 @@
     </style>
 
     <div class="admin-header">
-        <h1><span>🛠</span> Панель администратора</h1>
+        <h1><span>🛠</span> Панель адміністратора</h1>
     </div>
 
     <div class="admin-nav">
-        <a href="/admin?category=overview" class="admin-nav-item ${ (activeCategory == 'overview')?string('active', '') }">📊 Обзор</a>
-        <a href="/admin?category=orders" class="admin-nav-item ${ (activeCategory == 'orders')?string('active', '') }">📦 Заказы</a>
-        <a href="/admin?category=users" class="admin-nav-item ${ (activeCategory == 'users')?string('active', '') }">👥 Пользователи</a>
-        <a href="/admin?category=reviews" class="admin-nav-item ${ (activeCategory == 'reviews')?string('active', '') }">💬 Отзывы</a>
-        <a href="/admin?category=settings" class="admin-nav-item ${ (activeCategory == 'settings')?string('active', '') }">⚙️ Настройки</a>
+        <a href="/admin?category=overview" class="admin-nav-item ${ (activeCategory == 'overview')?string('active', '') }">📊 Огляд</a>
+        <a href="/admin?category=orders" class="admin-nav-item ${ (activeCategory == 'orders')?string('active', '') }">📦 Замовлення</a>
+        <a href="/admin?category=users" class="admin-nav-item ${ (activeCategory == 'users')?string('active', '') }">👥 Користувачі</a>
+        <a href="/admin?category=reviews" class="admin-nav-item ${ (activeCategory == 'reviews')?string('active', '') }">💬 Відгуки</a>
+        <a href="/admin?category=settings" class="admin-nav-item ${ (activeCategory == 'settings')?string('active', '') }">⚙️ Налаштування</a>
     </div>
 
     <#if activeCategory == "overview">
         <div class="stats-grid">
             <div class="stat-card">
-                <span class="label">Книжный фонд</span>
+                <span class="label">Книжковий фонд</span>
                 <span class="value">${totalBooks}</span>
             </div>
             <div class="stat-card">
-                <span class="label">Занято памяти</span>
+                <span class="label">Зайнято пам'яті</span>
                 <span class="value">${totalVolume} GB</span>
             </div>
             <div class="stat-card">
-                <span class="label">Пользователей</span>
+                <span class="label">Користувачів</span>
                 <span class="value">${users?size}</span>
             </div>
             <div class="stat-card">
-                <span class="label">Отзывы</span>
+                <span class="label">Відгуки</span>
                 <span class="value">${reviews?size}</span>
             </div>
         </div>
 
         <div class="admin-section">
             <div class="section-header">
-                <h3>📢 Рассылка уведомлений</h3>
+                <h3>📢 Розсилка сповіщень</h3>
             </div>
             <div class="section-body">
                 <form action="/admin/add-notification" method="POST" class="notification-form">
-                    <input type="text" name="message" class="admin-input" placeholder="Введите текст сообщения для всех пользователей..." required>
-                    <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">Отправить</button>
+                    <input type="text" name="message" class="admin-input" placeholder="Введіть текст повідомлення для всіх користувачів..." required>
+                    <button type="submit" class="btn btn-primary" style="padding: 12px 24px;">Надіслати</button>
                 </form>
             </div>
         </div>
 
         <div class="admin-section">
             <div class="section-header">
-                <h3>🔔 Последние уведомления</h3>
+                <h3>🔔 Останні сповіщення</h3>
             </div>
             <div class="section-body">
                 <#if notifications?has_content>
@@ -258,7 +258,7 @@
                         </#list>
                     </div>
                 <#else>
-                    <p style="color: #94a3b8; text-align: center; padding: 20px;">Уведомлений пока нет.</p>
+                    <p style="color: #94a3b8; text-align: center; padding: 20px;">Сповіщень поки немає.</p>
                 </#if>
             </div>
         </div>
@@ -292,18 +292,18 @@
     <#if activeCategory == "orders">
         <div class="admin-section">
             <div class="section-header">
-                <h3>📦 Управление заказами</h3>
+                <h3>📦 Керування замовленнями</h3>
             </div>
             <div class="admin-table-wrapper">
                 <table class="admin-table">
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Пользователь</th>
+                        <th>Користувач</th>
                         <th>Книга</th>
-                        <th>Место/Время</th>
+                        <th>Місце/Час</th>
                         <th>Статус</th>
-                        <th>Действия</th>
+                        <th>Дії</th>
                     </tr>
                     </thead>
                     <tbody>
@@ -329,12 +329,12 @@
                                         <form action="/admin/order/update-status" method="POST">
                                             <input type="hidden" name="orderId" value="${order.id?c}">
                                             <input type="hidden" name="status" value="DELIVERED">
-                                            <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">Выполнить</button>
+                                            <button type="submit" class="btn btn-primary" style="padding: 4px 8px; font-size: 12px;">Виконати</button>
                                         </form>
                                         <form action="/admin/order/update-status" method="POST">
                                             <input type="hidden" name="orderId" value="${order.id?c}">
                                             <input type="hidden" name="status" value="CANCELLED">
-                                            <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; color: #dc2626; border-color: #fecaca;">Отменить</button>
+                                            <button type="submit" class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px; color: #dc2626; border-color: #fecaca;">Скасувати</button>
                                         </form>
                                     </#if>
                                 </div>
@@ -350,15 +350,15 @@
     <#if activeCategory == "users">
         <div class="admin-section">
             <div class="section-header">
-                <h3>👥 Управление пользователями</h3>
+                <h3>👥 Керування користувачами</h3>
             </div>
             <div class="admin-table-wrapper">
                 <table class="admin-table">
                     <thead>
                     <tr>
                         <th>ID</th>
-                        <th>Пользователь</th>
-                        <th>Баланс баллов</th>
+                        <th>Користувач</th>
+                        <th>Баланс балів</th>
                         <th>Роль</th>
                     </tr>
                     </thead>
@@ -384,9 +384,9 @@
                             </td>
                             <td>
                                 <#if user.admin>
-                                    <span class="role-badge role-admin">Админ</span>
+                                    <span class="role-badge role-admin">Адмін</span>
                                 <#else>
-                                    <span class="role-badge role-user">Пользователь</span>
+                                    <span class="role-badge role-user">Користувач</span>
                                 </#if>
                             </td>
                         </tr>
@@ -400,7 +400,7 @@
     <#if activeCategory == "reviews">
         <div class="admin-section">
             <div class="section-header">
-                <h3>💬 Модерация отзывов</h3>
+                <h3>💬 Модерація відгуків</h3>
             </div>
             <div class="section-body" style="padding: 0;">
                 <#if reviews?has_content>
@@ -409,9 +409,9 @@
                             <div class="review-header">
                                 <div>
                                     <div class="review-book">${review.bookTitle}</div>
-                                    <div class="review-author">От: <strong>${review.reviewerName}</strong></div>
+                                    <div class="review-author">Від: <strong>${review.reviewerName}</strong></div>
                                 </div>
-                                <form action="/admin/reviews/delete" method="POST" onsubmit="return confirm('Удалить этот отзыв?');">
+                                <form action="/admin/reviews/delete" method="POST" onsubmit="return confirm('Видалити цей відгук?');">
                                     <input type="hidden" name="reviewId" value="${review.id?c}">
                                     <button type="submit" class="btn btn-secondary" style="color: var(--danger-color); padding: 8px;">
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -429,7 +429,7 @@
                         </div>
                     </#list>
                 <#else>
-                    <p style="color: #94a3b8; text-align: center; padding: 40px;">Отзывов пока нет.</p>
+                    <p style="color: #94a3b8; text-align: center; padding: 40px;">Відгуків поки немає.</p>
                 </#if>
             </div>
         </div>

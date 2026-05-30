@@ -1,6 +1,6 @@
 <#macro main_layout title="Smart Organizer">
     <!DOCTYPE html>
-    <html lang="ru">
+    <html lang="uk">
     <head>
         <title>${title}</title>
         <meta charset="UTF-8">
@@ -261,21 +261,19 @@
             <nav>
                 <ul>
                     <#if currentUser??>
-                        <li><a href="/">Библиотека</a></li>
-                        <li><a href="/my-reading">Моё чтение</a></li>
+                        <li><a href="/">Бібліотека</a></li>
+                        <li><a href="/my-reading">Моє читання</a></li>
                         <li><a href="/shop">Магазин</a></li>
                     <#else>
                         <li><a href="/shop">Магазин</a></li>
                     </#if>
                     <#if currentUser?? && currentUser.admin>
-                        <li><a href="/admin">Админ</a></li>
+                        <li><a href="/admin">Адмін</a></li>
                     </#if>
                 </ul>
             </nav>
             <div class="user-info">
                 <#if currentUser??>
-                <#-- Ссылка на профиль (если есть страница для обычного пользователя)
-                     или просто стильное отображение email -->
                     <a href="/admin/user/${currentUser.id?c}" class="user-profile-link" style="text-decoration: none; display: flex; align-items: center; gap: 8px; margin-right: 15px;">
                         <div class="user-avatar-mini" style="width: 28px; height: 28px; background: #f1f5f9; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: #64748b;">
                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -287,9 +285,9 @@
                     </a>
 
                     <span class="points-badge">💰 ${currentUser.points}</span>
-                    <a href="/logout" class="btn btn-secondary" style="padding: 6px 12px; margin-left: 10px;">Выйти</a>
+                    <a href="/logout" class="btn btn-secondary" style="padding: 6px 12px; margin-left: 10px;">Вийти</a>
                 <#else>
-                    <a href="/login" class="btn btn-primary">Войти</a>
+                    <a href="/login" class="btn btn-primary">Увійти</a>
                 </#if>
             </div>
         </div>
@@ -300,7 +298,7 @@
     </div>
 
     <footer>
-        <p>&copy; 2026 Smart Organizer. Сделано с любовью для читателей.</p>
+        <p>&copy; 2026 Smart Organizer. Зроблено з любов'ю для читачів.</p>
     </footer>
     </body>
     </html>
