@@ -38,8 +38,10 @@ public class DatabaseConfig {
         dataSource.setUrl(baseUrl + dbName);
         dataSource.setUsername(user);
         dataSource.setPassword(pass);
-        dataSource.setMinIdle(5);
-        dataSource.setMaxIdle(10);
+        dataSource.setMinIdle(10);
+        dataSource.setMaxIdle(50);
+        dataSource.setMaxTotal(100);
+        dataSource.setMaxWaitMillis(10000); // 10 seconds timeout to get a connection
         dataSource.setMaxOpenPreparedStatements(100);
         
         // Добавляем параметры для работы с большими файлами через JDBC

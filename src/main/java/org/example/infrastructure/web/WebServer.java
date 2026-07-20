@@ -104,8 +104,12 @@ public class WebServer {
 
                 // Jetty Server hardening
                 config.jetty.modifyServer(server -> {
-                    QueuedThreadPool threadPool = new QueuedThreadPool(50, 4, 60000);
-                    server.setAttribute("threadPool", threadPool); // Just in case, though it's hard to replace after creation
+                    if (server.getThreadPool() instanceof QueuedThreadPool) {
+                        QueuedThreadPool qtp = (QueuedThreadPool) server.getThreadPool();
+                        qtp.setMaxThreads(250);
+                        qtp.setMinThreads(10);
+                        qtp.setIdleTimeout(60000);
+                    }
 
                     HttpConfiguration httpConfig = new HttpConfiguration();
                     httpConfig.setSendServerVersion(false);
@@ -116,7 +120,7 @@ public class WebServer {
                     ServerConnector connector = new ServerConnector(server, new HttpConnectionFactory(httpConfig));
                     connector.setPort(finalPort);
                     connector.setIdleTimeout(30000); // 30 seconds idle timeout to prevent Slowloris
-                    connector.setAcceptQueueSize(100);
+                    connector.setAcceptQueueSize(150);
 
                     server.setConnectors(new Connector[]{connector});
                 });
@@ -145,10 +149,22 @@ public class WebServer {
         }
     }
 
+    private String getClientIp(Context ctx) {
+        String xff = ctx.header("X-Forwarded-For");
+        if (xff != null && !xff.isBlank()) {
+            int comma = xff.indexOf(',');
+            if (comma != -1) {
+                return xff.substring(0, comma).trim();
+            }
+            return xff.trim();
+        }
+        return ctx.ip();
+    }
+
     private void setupSecurity() {
         // IP Blocking check
         app.before(ctx -> {
-            String ip = ctx.ip();
+            String ip = getClientIp(ctx);
             Long blockUntil = blockedIps.get(ip);
             if (blockUntil != null) {
                 if (System.currentTimeMillis() < blockUntil) {
@@ -171,11 +187,19 @@ public class WebServer {
 
         // Rate limiting
         app.before(ctx -> {
-            String ip = ctx.ip();
+            String ip = getClientIp(ctx);
             long now = System.currentTimeMillis();
 
             // Check if already handled by IP block
             if (ctx.status() == HttpStatus.FORBIDDEN) return;
+
+            // Exclude static resources and binary book media endpoints from rate limiting
+            String path = ctx.path();
+            if (path.endsWith(".css") || path.endsWith(".js") || path.endsWith(".png") || 
+                path.endsWith(".jpg") || path.endsWith(".jpeg") || path.endsWith(".ico") || 
+                path.endsWith(".svg") || path.contains("/cover") || path.contains("/author-photo")) {
+                return;
+            }
 
             Long lastTime = lastRequestTime.get(ip);
             if (lastTime != null && (now - lastTime) < MIN_INTERVAL_MS) {
@@ -554,7 +578,7 @@ public class WebServer {
             int id = Integer.parseInt(ctx.pathParam("id"));
 
             // 2. anti double-click / duplicate request lock
-            String key = ctx.ip() + ":" + id;
+            String key = getClientIp(ctx) + ":" + id;
             long now = System.currentTimeMillis();
 
             Long last = downloadLock.get(key);

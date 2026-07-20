@@ -133,7 +133,7 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public List<StoredBook> findByUserId(Integer userId) {
         List<StoredBook> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE user_id = ? AND is_public = FALSE";
+        String sql = "SELECT id, user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, is_public, price, book_type, is_available FROM books WHERE user_id = ? AND is_public = FALSE";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
@@ -151,7 +151,7 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public List<StoredBook> findPublicBooks() {
         List<StoredBook> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE is_public = TRUE";
+        String sql = "SELECT id, user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, is_public, price, book_type, is_available FROM books WHERE is_public = TRUE";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             try (ResultSet rs = ps.executeQuery()) {
@@ -169,7 +169,7 @@ public class JdbcBookRepository implements BookRepository {
     public List<StoredBook> findOwnedBooksByUserId(Integer userId) {
         List<StoredBook> books = new ArrayList<>();
         // Книги, которые пользователь загрузил сам, ИЛИ которые он купил (есть в таблице orders)
-        String sql = "SELECT b.* FROM books b " +
+        String sql = "SELECT b.id, b.user_id, b.title, b.author, b.genre, b.year, b.series, b.series_index, b.language, b.description, b.cover, b.author_photo, b.file_path, b.original_name, b.file_size, b.is_public, b.price, b.book_type, b.is_available FROM books b " +
                      "WHERE b.user_id = ? " +
                      "OR b.id IN (SELECT book_id FROM orders WHERE user_id = ?)";
         try (Connection conn = DatabaseConfig.getConnection();
@@ -267,7 +267,7 @@ public class JdbcBookRepository implements BookRepository {
 
     @Override
     public Optional<StoredBook> findById(Integer id) {
-        String sql = "SELECT * FROM books WHERE id = ?";
+        String sql = "SELECT id, user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, is_public, price, book_type, is_available FROM books WHERE id = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, id);
@@ -296,7 +296,7 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public List<StoredBook> findByType(StoredBook.BookType type) {
         List<StoredBook> books = new ArrayList<>();
-        String sql = "SELECT * FROM books WHERE book_type = ?";
+        String sql = "SELECT id, user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, is_public, price, book_type, is_available FROM books WHERE book_type = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, type.name());
@@ -314,7 +314,7 @@ public class JdbcBookRepository implements BookRepository {
     @Override
     public List<StoredBook> findPublicBooks(String query, String genre, String language, String sort, int offset, int limit) {
         List<StoredBook> books = new ArrayList<>();
-        StringBuilder sql = new StringBuilder("SELECT * FROM books WHERE is_public = true");
+        StringBuilder sql = new StringBuilder("SELECT id, user_id, title, author, genre, year, series, series_index, language, description, cover, author_photo, file_path, original_name, file_size, is_public, price, book_type, is_available FROM books WHERE is_public = true");
         List<Object> params = new ArrayList<>();
 
         if (query != null && !query.isBlank()) {

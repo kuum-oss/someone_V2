@@ -285,7 +285,7 @@
                     </a>
 
                     <span class="points-badge">💰 ${currentUser.points}</span>
-                    <a href="/logout" class="btn btn-secondary" style="padding: 6px 12px; margin-left: 10px;">Вийти</a>
+                    <a href="/logout" id="logout-btn" class="btn btn-secondary" style="padding: 6px 12px; margin-left: 10px;">Вийти</a>
                 <#else>
                     <a href="/login" class="btn btn-primary">Увійти</a>
                 </#if>
@@ -300,6 +300,33 @@
     <footer>
         <p>&copy; 2026 Smart Organizer. Зроблено з любов'ю для читачів.</p>
     </footer>
+
+    <script>
+    document.addEventListener("DOMContentLoaded", function() {
+        const logoutBtn = document.getElementById("logout-btn");
+        if (logoutBtn) {
+            logoutBtn.addEventListener("click", function() {
+                localStorage.setItem("autoLogin", "false");
+            });
+        }
+        
+        <#if currentUser??>
+        const pendingLoginStr = localStorage.getItem('pendingLogin');
+        if (pendingLoginStr) {
+            localStorage.setItem('savedAccount', pendingLoginStr);
+            localStorage.removeItem('pendingLogin');
+            localStorage.setItem('autoLogin', 'true');
+        }
+        <#else>
+        if (localStorage.getItem('autoLogin') === 'true' && localStorage.getItem('savedAccount')) {
+            const path = window.location.pathname;
+            if (path !== '/login' && path !== '/register') {
+                window.location.href = '/login';
+            }
+        }
+        </#if>
+    });
+    </script>
     </body>
     </html>
 </#macro>

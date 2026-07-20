@@ -38,9 +38,21 @@ public class Main {
             // Инициализация БД
             DatabaseInitializer.initialize();
 
-            // Если запущен в безголовом режиме (например, в Docker), запускаем веб-сервер
-            if (java.awt.GraphicsEnvironment.isHeadless()) {
+            // Чтение параметров принудительного запуска
+            String envMode = System.getenv("START_MODE");
+            boolean forceGui = (envMode != null && envMode.equalsIgnoreCase("gui")) 
+                    || (args.length > 0 && args[0].equalsIgnoreCase("--gui"));
+            boolean forceWeb = (envMode != null && envMode.equalsIgnoreCase("web")) 
+                    || (args.length > 0 && args[0].equalsIgnoreCase("--web"));
+
+            // Если запущен в безголовом режиме или форсирован режим Web, запускаем веб-сервер
+            if (java.awt.GraphicsEnvironment.isHeadless() || forceWeb) {
                 startWebServer();
+                return;
+            }
+
+            if (forceGui) {
+                startGui();
                 return;
             }
 
