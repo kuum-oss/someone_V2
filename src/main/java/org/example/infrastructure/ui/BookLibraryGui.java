@@ -81,6 +81,7 @@ public class BookLibraryGui extends JFrame {
     private JButton addPointButton;
     private JToggleButton listViewButton;
     private JToggleButton gridViewButton;
+    private JButton addFilesButton;
 
     private BookDetailsPanel detailsPanel;
     private Book lastSelectedBook;
@@ -662,6 +663,13 @@ public class BookLibraryGui extends JFrame {
             filterBooks("");
         });
 
+        // Кнопка выбора файлов книг
+        addFilesButton = new JButton(messages.getString("button.add_files"));
+        addFilesButton.setToolTipText(messages.getString("button.add_files.tooltip"));
+        addFilesButton.setFont(addFilesButton.getFont().deriveFont(14f));
+        addFilesButton.setMargin(new Insets(2, 6, 2, 6));
+        addFilesButton.addActionListener(e -> openFileChooserAndAddBooks());
+
         String[] modes = {
                 messages.getString("filter.genre"),
                 messages.getString("filter.author"),
@@ -675,7 +683,11 @@ public class BookLibraryGui extends JFrame {
         searchBar.add(clearButton, BorderLayout.WEST);
         searchBar.add(searchButton, BorderLayout.EAST);
 
-        searchPanel.add(new JLabel(messages.getString("search.label")), BorderLayout.WEST);
+        JPanel searchWest = new JPanel(new FlowLayout(FlowLayout.LEFT, 4, 0));
+        searchWest.add(addFilesButton);
+        searchWest.add(new JLabel(messages.getString("search.label")));
+
+        searchPanel.add(searchWest, BorderLayout.WEST);
         searchPanel.add(searchBar, BorderLayout.CENTER);
         searchPanel.add(groupModeCombo, BorderLayout.EAST);
         searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
@@ -934,6 +946,10 @@ public class BookLibraryGui extends JFrame {
         shopButton.setText(messages.getString("button.shop"));
         physicalShopButton.setText(messages.getString("menu.physical_shop"));
         addPointButton.setText(messages.getString("button.add_point"));
+        if (addFilesButton != null) {
+            addFilesButton.setText(messages.getString("button.add_files"));
+            addFilesButton.setToolTipText(messages.getString("button.add_files.tooltip"));
+        }
         if (adminPanelButton != null) {
             adminPanelButton.setText(messages.getString("admin.button.dashboard"));
         }
@@ -1088,8 +1104,59 @@ public class BookLibraryGui extends JFrame {
 
     private void processFiles(List<File> files) {
         state.getLocalBooks().clear();
+        scanFiles(files);
+    }
+
+    /**
+     * Открывает диалог выбора файлов/папок и добавляет книги к уже загруженным
+     * (без очистки существующего списка).
+     */
+    private void openFileChooserAndAddBooks() {
+        if (state.getMode() == ViewMode.SHOP || state.getMode() == ViewMode.PHYSICAL_SHOP) {
+            JOptionPane.showMessageDialog(this,
+                    messages.getString("msg.add_files.shop_mode"),
+                    messages.getString("error.title"),
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JFileChooser chooser = new JFileChooser();
+        chooser.setDialogTitle(messages.getString("chooser.add_books.title"));
+        chooser.setMultiSelectionEnabled(true);
+        chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
+        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
+                messages.getString("chooser.add_books.filter"),
+                "epub", "fb2", "pdf", "mobi", "djvu", "txt", "azw3"
+        ));
+        chooser.setAcceptAllFileFilterUsed(true);
+
+        // Запоминаем последнюю директорию
+        String lastDir = prefs.get("lastBookDir", System.getProperty("user.home"));
+        chooser.setCurrentDirectory(new File(lastDir));
+
+        int result = chooser.showOpenDialog(this);
+        if (result != JFileChooser.APPROVE_OPTION) return;
+
+        File[] selected = chooser.getSelectedFiles();
+        if (selected == null || selected.length == 0) return;
+
+        // Сохраняем последнюю директорию
+        File parent = selected[0].isDirectory() ? selected[0] : selected[0].getParentFile();
+        if (parent != null) {
+            prefs.put("lastBookDir", parent.getAbsolutePath());
+        }
+
+        // Добавляем к существующим (не очищаем список)
+        scanFiles(Arrays.asList(selected));
+    }
+
+    /**
+     * Сканирует файлы и добавляет найденные книги к state (без очистки).
+     */
+    private void scanFiles(List<File> files) {
         organizeButton.setEnabled(false);
         cancelButton.setEnabled(true);
+        addFilesButton.setEnabled(false);
         startTime = System.currentTimeMillis();
         statusLabel.setText(messages.getString("status.preparing"));
 
@@ -1124,6 +1191,7 @@ public class BookLibraryGui extends JFrame {
             },
             () -> {
                 cancelButton.setEnabled(false);
+                addFilesButton.setEnabled(true);
                 organizeButton.setEnabled(!state.getBooks().isEmpty());
                 statusLabel.setText(
                         MessageFormat.format(messages.getString("status.found"), state.getBooks().size())

@@ -51,7 +51,16 @@ docker-compose up --build
 ```bash
 docker-compose -f docker-compose.gui.yml up --build
 ```
-После запуска откройте в браузере страницу: `http://localhost:6080/vnc.html` (вы увидите полноценное десктопное приложение).
+После запуска откройте в браузере страницу: `http://localhost:6080/vnc.html`
+
+> **Как добавить книги в контейнере**
+> Drag & drop через браузер не работает — файловая система контейнера изолирована от хоста. Положите книги в папку на хосте и примонтируйте её через volume в `docker-compose.gui.yml`:
+> ```yaml
+> app-gui:
+>   volumes:
+>     - ~/Books:/root/Books
+> ```
+> После этого в диалоге "Add Books" перейдите в `/root/Books` — там будут ваши файлы.
 
 #### Локальный запуск
 1. Соберите проект: `mvn clean package -DskipTests`
