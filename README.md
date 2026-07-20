@@ -51,7 +51,7 @@ docker-compose up --build
 ```bash
 docker-compose -f docker-compose.gui.yml up --build
 ```
-После запуска откройте в браузере страницу: `http://localhost:6080` (вы увидите полноценное десктопное приложение).
+После запуска откройте в браузере страницу: `http://localhost:6080/vnc.html` (вы увидите полноценное десктопное приложение).
 
 #### Локальный запуск
 1. Соберите проект: `mvn clean package -DskipTests`

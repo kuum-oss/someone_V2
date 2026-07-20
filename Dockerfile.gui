@@ -3,36 +3,28 @@ COPY . /app
 WORKDIR /app
 RUN mvn clean package -DskipTests
 
-FROM debian:bookworm-slim
+FROM eclipse-temurin:21-jre
 
-# Установка необходимых системных пакетов:
-# - openjdk-21-jre (полная JRE с поддержкой AWT/Swing/GUI)
-# - xvfb (виртуальный дисплей-сервер)
-# - x11vnc (VNC-сервер для стриминга X11-экрана)
-# - fluxbox (легковесный менеджер окон для прорисовки рамок окон и кнопок управления)
-# - novnc & websockify (веб-клиент noVNC для просмотра GUI прямо в браузере)
-# - supervisor (утилита для одновременного запуска и контроля всех процессов в контейнере)
 RUN apt-get update && apt-get install -y \
-    openjdk-21-jre \
     xvfb \
     x11vnc \
     fluxbox \
-    novnc \
-    websockify \
+    python3-websockify \
     supervisor \
+    wget \
+    && wget -qO /tmp/novnc.tar.gz https://github.com/novnc/noVNC/archive/refs/tags/v1.4.0.tar.gz \
+    && tar -xzf /tmp/novnc.tar.gz -C /opt \
+    && mv /opt/noVNC-1.4.0 /opt/novnc \
+    && rm /tmp/novnc.tar.gz \
     && rm -rf /var/lib/apt/lists/*
 
-# Установка переменной окружения для X11
 ENV DISPLAY=:99
 ENV START_MODE=gui
 
 WORKDIR /app
 COPY --from=build /app/target/someone-1.0-SNAPSHOT.jar /app/app.jar
-
-# Копирование конфигурации supervisor
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-# 6080 — noVNC веб-интерфейс, 5900 — VNC порт, 8081 — порт встроенного веб-сервера
 EXPOSE 6080 5900 8081
 
 CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/conf.d/supervisord.conf"]
