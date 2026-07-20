@@ -1593,13 +1593,13 @@ public class BookLibraryGui extends JFrame {
         if (!state.isAuthenticated()) return;
         controller.switchMode(ViewMode.LIBRARY); // Reuse library mode or could add CLOUD mode
         updateAuthUI();
-        detailsPanel.setBuyButtonVisible(false);
-        libraryButton.setEnabled(true);
-        myCloudLibraryButton.setEnabled(false);
-        shopButton.setEnabled(true);
-        physicalShopButton.setEnabled(true);
-        headerBookInfoButton.setVisible(false);
-        
+        if (detailsPanel != null) detailsPanel.setBuyButtonVisible(false);
+        if (libraryButton != null) libraryButton.setEnabled(true);
+        if (myCloudLibraryButton != null) myCloudLibraryButton.setEnabled(false);
+        if (shopButton != null) shopButton.setEnabled(true);
+        if (physicalShopButton != null) physicalShopButton.setEnabled(true);
+        if (headerBookInfoButton != null) headerBookInfoButton.setVisible(false);
+
         controller.loadOwnedBooks(books -> {
             updateView();
         });
@@ -1608,11 +1608,11 @@ public class BookLibraryGui extends JFrame {
     private void switchToLibrary() {
         controller.switchMode(ViewMode.LIBRARY);
         updateAuthUI();
-        detailsPanel.setBuyButtonVisible(false);
-        libraryButton.setEnabled(false);
-        shopButton.setEnabled(true);
-        physicalShopButton.setEnabled(true);
-        headerBookInfoButton.setVisible(false);
+        if (detailsPanel != null) detailsPanel.setBuyButtonVisible(false);
+        if (libraryButton != null) libraryButton.setEnabled(false);
+        if (shopButton != null) shopButton.setEnabled(true);
+        if (physicalShopButton != null) physicalShopButton.setEnabled(true);
+        if (headerBookInfoButton != null) headerBookInfoButton.setVisible(false);
         if (state.isAuthenticated()) {
             controller.loadOwnedBooks(books -> {
                 updateView();
@@ -1626,12 +1626,14 @@ public class BookLibraryGui extends JFrame {
         if (!state.isAuthenticated()) return;
         controller.switchMode(ViewMode.SHOP);
         updateAuthUI();
-        detailsPanel.setBuyButtonVisible(true);
-        detailsPanel.setBuyButtonText(messages.getString("button.buy"));
-        libraryButton.setEnabled(true);
-        shopButton.setEnabled(false);
-        physicalShopButton.setEnabled(true);
-        headerBookInfoButton.setVisible(false);
+        if (detailsPanel != null) {
+            detailsPanel.setBuyButtonVisible(true);
+            detailsPanel.setBuyButtonText(messages.getString("button.buy"));
+        }
+        if (libraryButton != null) libraryButton.setEnabled(true);
+        if (shopButton != null) shopButton.setEnabled(false);
+        if (physicalShopButton != null) physicalShopButton.setEnabled(true);
+        if (headerBookInfoButton != null) headerBookInfoButton.setVisible(false);
         loadShopBooks();
     }
 
@@ -1639,12 +1641,14 @@ public class BookLibraryGui extends JFrame {
         if (!state.isAuthenticated()) return;
         controller.switchMode(ViewMode.PHYSICAL_SHOP);
         updateAuthUI();
-        detailsPanel.setBuyButtonVisible(true);
-        detailsPanel.setBuyButtonText("Замовити");
-        libraryButton.setEnabled(true);
-        shopButton.setEnabled(true);
-        physicalShopButton.setEnabled(false);
-        headerBookInfoButton.setVisible(false);
+        if (detailsPanel != null) {
+            detailsPanel.setBuyButtonVisible(true);
+            detailsPanel.setBuyButtonText("Замовити");
+        }
+        if (libraryButton != null) libraryButton.setEnabled(true);
+        if (shopButton != null) shopButton.setEnabled(true);
+        if (physicalShopButton != null) physicalShopButton.setEnabled(false);
+        if (headerBookInfoButton != null) headerBookInfoButton.setVisible(false);
         loadPhysicalShopBooks();
     }
 
