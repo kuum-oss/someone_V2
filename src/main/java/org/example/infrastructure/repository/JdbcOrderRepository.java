@@ -62,6 +62,7 @@ public class JdbcOrderRepository implements OrderRepository {
                 );
                 order.setUserEmail(rs.getString("email"));
                 order.setBookTitle(rs.getString("title"));
+                    order.setQrToken(rs.getString("qr_token"));
                 orders.add(order);
             }
         } catch (SQLException e) {
@@ -92,6 +93,7 @@ public class JdbcOrderRepository implements OrderRepository {
                             rs.getTimestamp("end_time") != null ? rs.getTimestamp("end_time").toLocalDateTime() : null
                     );
                     order.setBookTitle(rs.getString("title"));
+                    order.setQrToken(rs.getString("qr_token"));
                     orders.add(order);
                 }
             }
@@ -124,6 +126,7 @@ public class JdbcOrderRepository implements OrderRepository {
                             rs.getTimestamp("end_time") != null ? rs.getTimestamp("end_time").toLocalDateTime() : null
                     );
                     order.setBookTitle(rs.getString("title"));
+                    order.setQrToken(rs.getString("qr_token"));
                     orders.add(order);
                 }
             }
@@ -144,5 +147,84 @@ public class JdbcOrderRepository implements OrderRepository {
         } catch (SQLException e) {
             throw new RuntimeException("Error updating order status", e);
         }
+    }
+
+    @Override
+    public void updateQrToken(Integer orderId, String qrToken) {
+        String sql = "UPDATE orders SET qr_token = ? WHERE id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, qrToken);
+            ps.setInt(2, orderId);
+            ps.executeUpdate();
+        } catch (SQLException e) {
+            throw new RuntimeException("Error updating qr token", e);
+        }
+    }
+
+    @Override
+    public Order findById(Integer orderId) {
+        String sql = "SELECT o.*, b.title, u.email FROM orders o " +
+                     "JOIN books b ON o.book_id = b.id " +
+                     "JOIN users u ON o.user_id = u.id " +
+                     "WHERE o.id = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, orderId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Order order = new Order(
+                            rs.getInt("id"),
+                            rs.getInt("user_id"),
+                            rs.getInt("book_id"),
+                            Order.Status.valueOf(rs.getString("status")),
+                            rs.getTimestamp("created_at").toLocalDateTime(),
+                            rs.getString("seat_number"),
+                            rs.getTimestamp("start_time") != null ? rs.getTimestamp("start_time").toLocalDateTime() : null,
+                            rs.getTimestamp("end_time") != null ? rs.getTimestamp("end_time").toLocalDateTime() : null
+                    );
+                    order.setBookTitle(rs.getString("title"));
+                    order.setUserEmail(rs.getString("email"));
+                    order.setQrToken(rs.getString("qr_token"));
+                    return order;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding order by id", e);
+        }
+        return null;
+    }
+
+    @Override
+    public Order findByQrToken(String qrToken) {
+        String sql = "SELECT o.*, b.title, u.email FROM orders o " +
+                     "JOIN books b ON o.book_id = b.id " +
+                     "JOIN users u ON o.user_id = u.id " +
+                     "WHERE o.qr_token = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, qrToken);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Order order = new Order(
+                            rs.getInt("id"),
+                            rs.getInt("user_id"),
+                            rs.getInt("book_id"),
+                            Order.Status.valueOf(rs.getString("status")),
+                            rs.getTimestamp("created_at").toLocalDateTime(),
+                            rs.getString("seat_number"),
+                            rs.getTimestamp("start_time") != null ? rs.getTimestamp("start_time").toLocalDateTime() : null,
+                            rs.getTimestamp("end_time") != null ? rs.getTimestamp("end_time").toLocalDateTime() : null
+                    );
+                    order.setBookTitle(rs.getString("title"));
+                    order.setUserEmail(rs.getString("email"));
+                    order.setQrToken(rs.getString("qr_token"));
+                    return order;
+                }
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException("Error finding order by qr_token", e);
+        }
+        return null;
     }
 }

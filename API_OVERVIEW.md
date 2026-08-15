@@ -35,15 +35,28 @@
 - **Заметки**: `POST /api/reading/notes` (bookId, notes)
 - **Отзывы**: `POST /api/reading/review` (bookId, review)
 
-### 6. Покупка и заказы
+### 6. Покупка, заказы и QR-коды
 - **Покупка цифровой книги**: `POST /shop/buy` (bookId)
 - **Выбор места (для физических)**: `GET /book/{id}/order` (HTML)
-- **Оформление заказа**: `POST /shop/buy/physical` (bookId, seatNumber, hour, duration)
+- **Оформление заказа**: `POST /shop/buy/physical` (bookId, seatNumber, hour, duration) — перенаправляет на `/order/confirmation/{orderId}`
+- **Страница подтверждения заказа**: `GET /order/confirmation/{orderId}` (HTML с отображением QR-кода)
+- **Изображение QR-кода**: `GET /order/{orderId}/qr.png` (image/png) — отдает PNG-изображение QR-кода
+- **Сканирование / проверка QR (Админ)**: `GET/POST /admin/scan-qr` (query) — поиск заказа по токену QR-кода или номеру
+- **Обновление статуса заказа (Админ)**: `POST /admin/orders/{id}/status` (status=DELIVERED|CANCELLED|PENDING)
 
 ### 7. Аутентификация
 - **Вход**: `GET/POST /login`
 - **Регистрация**: `GET/POST /register`
 - **Выход**: `GET /logout`
+
+## Конфигурация SMTP и Email (.env)
+Настройки отправки писем с QR-кодами считываются из файла `.env` и `application.properties`:
+```env
+MAIL_SMTP_HOST=smtp.gmail.com
+MAIL_SMTP_PORT=587
+MAIL_SMTP_USER=kuumuwu@gmail.com
+MAIL_SMTP_PASSWORD=your_app_password
+```
 
 ## Панель администратора
 Доступна пользователям с флагом `is_admin`.
@@ -81,6 +94,7 @@
 ### Таблица `orders`
 - `id`, `user_id`, `book_id`, `seat_number`.
 - `start_time`, `end_time`, `status`.
+- `qr_token`: VARCHAR(64) — Уникальный SHA-256 хеш-токен для валидации и сканирования QR-кода.
 
 ### Таблица `reading_progress`
 - `id`: Первичный ключ.

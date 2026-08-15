@@ -3,6 +3,7 @@ package org.example.infrastructure.ui.dialogs;
 import org.example.core.entity.Order;
 import org.example.core.entity.StoredBook;
 import org.example.core.service.AuthService;
+import org.example.core.service.LibraryService;
 import org.example.core.service.OrderService;
 
 import javax.swing.*;
@@ -13,12 +14,18 @@ import java.util.List;
 public class PhysicalShopDialog extends JDialog {
     private final OrderService orderService;
     private final AuthService authService;
+    private final LibraryService libraryService;
 
-    public PhysicalShopDialog(Frame parent, OrderService orderService, AuthService authService) {
+    public PhysicalShopDialog(Frame parent, OrderService orderService, AuthService authService, LibraryService libraryService) {
         super(parent, "Магазин фізичних книг", true);
         this.orderService = orderService;
         this.authService = authService;
+        this.libraryService = libraryService;
         initUI();
+    }
+
+    public PhysicalShopDialog(Frame parent, OrderService orderService, AuthService authService) {
+        this(parent, orderService, authService, null);
     }
 
     private void initUI() {
@@ -74,8 +81,26 @@ public class PhysicalShopDialog extends JDialog {
                     return;
                 }
 
-                orderService.placeOrder(authService.getCurrentUser().getId(), book.getId());
-                JOptionPane.showMessageDialog(this, "Замовлення оформлено! Адмін зв'яжеться з вами.");
+                String seatNumber = null;
+                java.time.LocalDateTime startTime = null;
+                java.time.LocalDateTime endTime = null;
+
+                if (libraryService != null) {
+                    SeatSelectionDialog seatDialog = new SeatSelectionDialog((Frame) getOwner(), libraryService);
+                    seatDialog.setVisible(true);
+                    seatNumber = seatDialog.getSelectedSeat();
+                    startTime = seatDialog.getStartTime();
+                    endTime = seatDialog.getEndTime();
+                    if (seatNumber == null) {
+                        return; // Пользователь отменил выбор места
+                    }
+                }
+
+                Order order = orderService.placeOrder(authService.getCurrentUser().getId(), book.getId(), seatNumber, startTime, endTime);
+                byte[] qrBytes = orderService.getOrderQrCode(order.getId());
+
+                OrderQrDialog qrDialog = new OrderQrDialog((Frame) getOwner(), order, qrBytes);
+                qrDialog.setVisible(true);
             } catch (Exception ex) {
                 JOptionPane.showMessageDialog(this, "Помилка: " + ex.getMessage());
             }
@@ -88,21 +113,42 @@ public class PhysicalShopDialog extends JDialog {
 
     private void showUserOrders() {
         List<Order> orders = orderService.getUserOrders(authService.getCurrentUser().getId());
-        String[] columns = {"ID", "Дата", "Книга", "Статус", "Дія"};
+        String[] columns = {"ID", "Дата", "Книга", "Статус", "QR-код", "Дія"};
         DefaultTableModel model = new DefaultTableModel(columns, 0) {
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4;
+                return column == 4 || column == 5;
             }
         };
 
         for (Order o : orders) {
-            model.addRow(new Object[]{o.getId(), o.getCreatedAt(), o.getBookTitle(), o.getStatus(), o.getStatus() == Order.Status.PENDING ? "Скасувати" : ""});
+            model.addRow(new Object[]{
+                o.getId(),
+                o.getCreatedAt(),
+                o.getBookTitle(),
+                o.getStatus(),
+                "Переглянути QR",
+                o.getStatus() == Order.Status.PENDING ? "Скасувати" : ""
+            });
         }
 
         JTable table = new JTable(model);
+
+        // Столбец просмотра QR-кода
         table.getColumnModel().getColumn(4).setCellRenderer(new ButtonRenderer());
         table.getColumnModel().getColumn(4).setCellEditor(new ButtonEditor(new JCheckBox(), (orderId) -> {
+            Integer id = (Integer) orderId;
+            Order order = orderService.findOrderById(id);
+            if (order != null) {
+                byte[] qrBytes = orderService.getOrderQrCode(id);
+                OrderQrDialog qrDialog = new OrderQrDialog((Frame) getOwner(), order, qrBytes);
+                qrDialog.setVisible(true);
+            }
+        }));
+
+        // Столбец отмены заказа
+        table.getColumnModel().getColumn(5).setCellRenderer(new ButtonRenderer());
+        table.getColumnModel().getColumn(5).setCellEditor(new ButtonEditor(new JCheckBox(), (orderId) -> {
             try {
                 orderService.cancelOrder((Integer) orderId, authService.getCurrentUser().getId());
                 JOptionPane.showMessageDialog(this, "Замовлення скасовано");
@@ -113,7 +159,7 @@ public class PhysicalShopDialog extends JDialog {
         }));
 
         JScrollPane scroll = new JScrollPane(table);
-        scroll.setPreferredSize(new Dimension(600, 300));
+        scroll.setPreferredSize(new Dimension(750, 350));
         JOptionPane.showMessageDialog(this, scroll, "Мої замовлення", JOptionPane.PLAIN_MESSAGE);
     }
 
@@ -133,7 +179,6 @@ public class PhysicalShopDialog extends JDialog {
         protected JButton button;
         private Object value;
         private final java.util.function.Consumer<Object> action;
-        private JTable table;
 
         public ButtonEditor(JCheckBox checkBox, java.util.function.Consumer<Object> action) {
             super(checkBox);
@@ -145,8 +190,7 @@ public class PhysicalShopDialog extends JDialog {
 
         @Override
         public Component getTableCellEditorComponent(JTable table, Object value, boolean isSelected, int row, int column) {
-            this.table = table;
-            this.value = table.getModel().getValueAt(row, 0); // Get ID
+            this.value = table.getModel().getValueAt(row, 0); // Get order ID from col 0
             String text = (value == null) ? "" : value.toString();
             button.setText(text);
             button.setVisible(!text.isEmpty());

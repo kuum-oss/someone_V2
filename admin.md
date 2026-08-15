@@ -19,6 +19,10 @@
     - `MetadataGateway`: Интерфейс для локального извлечения метаданных.
     - `FileGateway`: Интерфейс для работы с файловой системой.
     - `ExternalMetadataGateway`: Интерфейс для получения данных из сети (API).
+*   **Services** (`org.example.core.service`):
+    - `OrderService`: Управление заказами, выбор мест и статусы.
+    - `QrCodeService`: Генерация SHA-256 хеш-токенов заказов и создание PNG-изображений QR-кодов (ZXing).
+    - `EmailService`: Фоновая отправка писем с QR-кодами на email с использованием параметров из `.env`.
 *   **Utils** (`org.example.core.util`):
     - `TextNormalizer`: Общая логика обработки текста, очистки имен файлов и нормализации данных.
     - `TransliterationUtils`: Логика детекции и конвертации транслита (Latin -> Cyrillic).
@@ -37,15 +41,20 @@
 *   **UI** (`org.example.infrastructure.ui`):
     - `BookLibraryGui`: Главное окно приложения на Swing.
     - `components/BookDetailsPanel`: Панель с детальной информацией о книге.
+    - `dialogs/OrderQrDialog`: Окно просмотра и скачивания (сохранения) PNG QR-кода заказа.
+    - `dialogs/PhysicalShopDialog`: Окно физического магазина и «Мої замовлення» с просмотром QR-кодов.
     - `GenreImageService`: Логика подбора иконок для жанров.
 *   **Web** (`org.example.infrastructure.web`):
     - `WebServer`: Сервер на базе Javalin для отображения библиотеки в браузере.
+    - `templates/order_confirmation.ftl`: Страница подтверждения заказа с QR-билетом.
+    - `templates/admin_scan_qr.ftl`: Страница сканирования QR-кода и поиска заказов для администратора.
     - `templates/library.ftl`: Шаблон FreeMarker для генерации HTML.
 *   **DB** (`org.example.infrastructure.db`):
     - `DatabaseInitializer`: Скрипты создания таблиц и механизм повторных попыток подключения.
     - `DatabaseConfig`: Конфигурация пула соединений (DBCP2).
 *   **Repository** (`org.example.infrastructure.repository`):
     - `JdbcBookRepository`: Реализация доступа к книгам в MySQL.
+    - `JdbcOrderRepository`: Управление заказами и QR-токенами (`qr_token`).
     - `JdbcUserRepository`: Управление пользователями.
 
 ### 4. Application Root - `org.example`

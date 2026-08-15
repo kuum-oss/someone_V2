@@ -16,9 +16,11 @@ import org.example.core.usecase.GroupBooksUseCase;
 import org.example.core.util.BookFileUtils;
 import org.example.infrastructure.ui.components.BookDetailsPanel;
 import org.example.infrastructure.ui.components.BookGridView;
+import org.example.infrastructure.ui.components.LibrarySummaryPanel;
 import org.example.infrastructure.ui.dialogs.AuthDialog;
 import org.example.infrastructure.ui.dialogs.BookPreviewDialog;
 import org.example.infrastructure.ui.dialogs.LibraryDialog;
+import org.example.infrastructure.ui.dialogs.ImportWizardDialog;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +66,9 @@ public class BookLibraryGui extends JFrame {
     private BookGridView gridView;
     private JPanel centerCardPanel;
     private CardLayout centerCardLayout;
+    private JPanel navigationPanel;
+    private LibrarySummaryPanel summaryPanel;
+    private JPanel detailsContainer;
 
     private JLabel statusLabel;
     private JLabel pointsLabel;
@@ -485,7 +490,21 @@ public class BookLibraryGui extends JFrame {
             }
         });
 
-        add(detailsPanel, BorderLayout.EAST);
+        detailsContainer = new JPanel(new BorderLayout(4, 0));
+        JButton detailsToggle = new JButton("›");
+        detailsToggle.setToolTipText(messages.getString("details.toggle"));
+        detailsToggle.setMargin(new Insets(4, 4, 4, 4));
+        detailsToggle.addActionListener(e -> {
+            boolean visible = detailsPanel.isVisible();
+            detailsPanel.setVisible(!visible);
+            detailsToggle.setText(visible ? "‹" : "›");
+            detailsContainer.setPreferredSize(visible ? new Dimension(36, 0) : new Dimension(300, 0));
+            detailsContainer.revalidate();
+            detailsContainer.getParent().revalidate();
+        });
+        detailsContainer.add(detailsToggle, BorderLayout.WEST);
+        detailsContainer.add(detailsPanel, BorderLayout.CENTER);
+        add(detailsContainer, BorderLayout.EAST);
 
         tree.addTreeSelectionListener(e -> {
             DefaultMutableTreeNode node = (DefaultMutableTreeNode) tree.getLastSelectedPathComponent();
@@ -619,11 +638,6 @@ public class BookLibraryGui extends JFrame {
         });
 
         JPanel modePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
-        modePanel.add(libraryButton);
-        modePanel.add(myCloudLibraryButton);
-        modePanel.add(shopButton);
-        modePanel.add(physicalShopButton);
-        modePanel.add(adminPanelButton);
         modePanel.add(new JSeparator(SwingConstants.VERTICAL));
         modePanel.add(listViewButton);
         modePanel.add(gridViewButton);
@@ -642,6 +656,9 @@ public class BookLibraryGui extends JFrame {
 
         top.add(buttons, BorderLayout.EAST);
         add(top, BorderLayout.NORTH);
+
+        navigationPanel = buildNavigationPanel();
+        add(navigationPanel, BorderLayout.WEST);
 
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.add(statusLabel, BorderLayout.CENTER);
@@ -692,14 +709,61 @@ public class BookLibraryGui extends JFrame {
         searchPanel.add(groupModeCombo, BorderLayout.EAST);
         searchPanel.setBorder(BorderFactory.createEmptyBorder(5, 5, 5, 5));
 
+        summaryPanel = new LibrarySummaryPanel(messages);
+        summaryPanel.updateBooks(state.getBooks());
+        JPanel centerHeader = new JPanel(new BorderLayout());
+        centerHeader.add(summaryPanel, BorderLayout.NORTH);
+        centerHeader.add(searchPanel, BorderLayout.SOUTH);
+
         JPanel centerPanel = new JPanel(new BorderLayout());
-        centerPanel.add(searchPanel, BorderLayout.NORTH);
+        centerPanel.add(centerHeader, BorderLayout.NORTH);
         centerPanel.add(centerCardPanel, BorderLayout.CENTER);
 
         add(centerPanel, BorderLayout.CENTER);
         
         revalidate();
         repaint();
+    }
+
+    private JPanel buildNavigationPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(0, 0, 0, 1,
+                        UIManager.getColor("Component.borderColor")),
+                BorderFactory.createEmptyBorder(12, 8, 12, 8)));
+        panel.setPreferredSize(new Dimension(190, 0));
+
+        JLabel title = new JLabel(messages.getString("navigation.library"));
+        title.setFont(title.getFont().deriveFont(Font.BOLD, 15f));
+        title.setBorder(BorderFactory.createEmptyBorder(0, 6, 10, 6));
+        panel.add(title);
+        addNavigationButton(panel, libraryButton);
+        addNavigationButton(panel, myCloudLibraryButton);
+        addNavigationButton(panel, shopButton);
+        addNavigationButton(panel, physicalShopButton);
+
+        panel.add(Box.createVerticalStrut(18));
+        JLabel toolsTitle = new JLabel(messages.getString("navigation.tools"));
+        toolsTitle.setFont(toolsTitle.getFont().deriveFont(Font.BOLD, 13f));
+        toolsTitle.setBorder(BorderFactory.createEmptyBorder(0, 6, 6, 6));
+        panel.add(toolsTitle);
+        addNavigationButton(panel, adminPanelButton);
+
+        panel.add(Box.createVerticalGlue());
+        JButton settingsButton = new JButton(messages.getString("navigation.settings"));
+        settingsButton.setAlignmentX(Component.LEFT_ALIGNMENT);
+        settingsButton.addActionListener(e -> settingsMenu.doClick());
+        panel.add(settingsButton);
+        return panel;
+    }
+
+    private void addNavigationButton(JPanel panel, JButton button) {
+        button.setAlignmentX(Component.LEFT_ALIGNMENT);
+        button.setMaximumSize(new Dimension(Integer.MAX_VALUE, 34));
+        button.setHorizontalAlignment(SwingConstants.LEFT);
+        panel.add(button);
+        panel.add(Box.createVerticalStrut(4));
     }
 
     /* ===================== MENU ===================== */
@@ -731,7 +795,7 @@ public class BookLibraryGui extends JFrame {
         libraryMenu.add(uploadAllItem);
 
         physicalShopItem = new JMenuItem(messages.getString("menu.physical_shop"));
-        physicalShopItem.addActionListener(e -> new org.example.infrastructure.ui.dialogs.PhysicalShopDialog(this, orderService, authService).setVisible(true));
+        physicalShopItem.addActionListener(e -> new org.example.infrastructure.ui.dialogs.PhysicalShopDialog(this, orderService, authService, libraryService).setVisible(true));
         libraryMenu.add(physicalShopItem);
 
         bar.add(libraryMenu);
@@ -1120,34 +1184,14 @@ public class BookLibraryGui extends JFrame {
             return;
         }
 
-        JFileChooser chooser = new JFileChooser();
-        chooser.setDialogTitle(messages.getString("chooser.add_books.title"));
-        chooser.setMultiSelectionEnabled(true);
-        chooser.setFileSelectionMode(JFileChooser.FILES_AND_DIRECTORIES);
-        chooser.setFileFilter(new javax.swing.filechooser.FileNameExtensionFilter(
-                messages.getString("chooser.add_books.filter"),
-                "epub", "fb2", "pdf", "mobi", "djvu", "txt", "azw3"
-        ));
-        chooser.setAcceptAllFileFilterUsed(true);
-
-        // Запоминаем последнюю директорию
         String lastDir = prefs.get("lastBookDir", System.getProperty("user.home"));
-        chooser.setCurrentDirectory(new File(lastDir));
-
-        int result = chooser.showOpenDialog(this);
-        if (result != JFileChooser.APPROVE_OPTION) return;
-
-        File[] selected = chooser.getSelectedFiles();
-        if (selected == null || selected.length == 0) return;
-
-        // Сохраняем последнюю директорию
-        File parent = selected[0].isDirectory() ? selected[0] : selected[0].getParentFile();
-        if (parent != null) {
-            prefs.put("lastBookDir", parent.getAbsolutePath());
-        }
-
-        // Добавляем к существующим (не очищаем список)
-        scanFiles(Arrays.asList(selected));
+        new ImportWizardDialog(this, messages, new File(lastDir), files -> {
+            if (!files.isEmpty()) {
+                File parent = files.get(0).isDirectory() ? files.get(0) : files.get(0).getParentFile();
+                if (parent != null) prefs.put("lastBookDir", parent.getAbsolutePath());
+                scanFiles(files);
+            }
+        }).setVisible(true);
     }
 
     /**
@@ -1284,6 +1328,7 @@ public class BookLibraryGui extends JFrame {
     private void updateView() {
         updateTree(state.getBooks());
         updateGridView(state.getBooks());
+        if (summaryPanel != null) summaryPanel.updateBooks(state.getBooks());
     }
 
     private void updateGridView(List<Book> books) {
@@ -1351,7 +1396,8 @@ public class BookLibraryGui extends JFrame {
             if (value instanceof DefaultMutableTreeNode node) {
                 Object userObject = node.getUserObject();
                 if (userObject instanceof Book book) {
-                    setText(book.getTitle());
+                    setText(metadataWarning(book) ? "⚠ " + book.getTitle() : "✓ " + book.getTitle());
+                    setToolTipText(metadataWarning(book) ? "Требует проверки метаданных" : "Метаданные проверены");
 
                     // --- Логика обложки (как была у тебя) ---
                     ImageIcon icon = null;
@@ -1397,6 +1443,16 @@ public class BookLibraryGui extends JFrame {
             }
 
             return panel;
+        }
+
+        private boolean metadataWarning(Book book) {
+            return isUnknown(book.getTitle()) || isUnknown(book.getAuthor())
+                    || isUnknown(book.getGenre()) || isUnknown(book.getYear());
+        }
+
+        private boolean isUnknown(String value) {
+            return value == null || value.isBlank() || "Unknown".equalsIgnoreCase(value)
+                    || "Неизвестно".equalsIgnoreCase(value);
         }
     }
 

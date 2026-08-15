@@ -78,6 +78,7 @@
                             <th style="padding: 16px;">Книга</th>
                             <th style="padding: 16px;">Місце / Час</th>
                             <th style="padding: 16px;">Статус</th>
+                            <th style="padding: 16px;">QR-код</th>
                             <th style="padding: 16px;">Дія</th>
                         </tr>
                         </thead>
@@ -101,6 +102,18 @@
                                         </#if>">
                                             ${order.status}
                                         </span>
+                                </td>
+                                <td style="padding: 16px; text-align: center;">
+                                    <#if order.qrToken??>
+                                        <a href="/order/${order.id?c}/qr.png" target="_blank" title="Відкрити QR-код">
+                                            <img src="/order/${order.id?c}/qr.png" width="70" height="70"
+                                                 alt="QR #${order.id?c}"
+                                                 style="border: 1px solid #e2e8f0; border-radius: 6px; padding: 2px;">
+                                        </a>
+                                        <br><small style="color:#64748b;font-size:10px;">#${order.id?c}</small>
+                                    <#else>
+                                        <span style="color:#94a3b8;">—</span>
+                                    </#if>
                                 </td>
                                 <td style="padding: 16px;">
                                     <#if order.status == "PENDING">

@@ -152,7 +152,9 @@ public class Main {
                     AuthService authService = new AuthService(userRepository);
                     FileStorageService storageService = new FileStorageService(bookRepo, authService, metadataAdapter, orderRepository);
                     org.example.core.service.AdminDashboardService dashboardService = new org.example.core.service.AdminDashboardService(bookRepo, notificationRepository);
-                    org.example.core.service.OrderService orderService = new org.example.core.service.OrderService(orderRepository, bookRepo, dashboardService);
+                    org.example.core.service.QrCodeService qrCodeService = new org.example.core.service.QrCodeService();
+                    org.example.core.service.EmailService emailService = new org.example.core.service.EmailService();
+                    org.example.core.service.OrderService orderService = new org.example.core.service.OrderService(orderRepository, bookRepo, dashboardService, qrCodeService, emailService);
                     AdminService adminService = new AdminService(storageService, authService, userRepository, bookRepo);
                     LibraryService libraryService = new LibraryService(settingsRepository, orderRepository);
                     org.example.core.service.ReadingService readingService = new org.example.core.service.ReadingService(readingRepository);

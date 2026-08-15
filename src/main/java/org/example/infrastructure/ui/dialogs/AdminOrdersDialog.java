@@ -41,9 +41,49 @@ public class AdminOrdersDialog extends JDialog {
 
         add(new JScrollPane(table), BorderLayout.CENTER);
 
-        JButton closeBtn = new JButton("Закрыть");
+        JButton scanQrBtn = new JButton("📷 Сканувати QR / Ввести номер");
+        scanQrBtn.addActionListener(e -> {
+            String input = JOptionPane.showInputDialog(this, "Введіть вміст QR-коду або номер замовлення:", "Перевірка замовлення", JOptionPane.QUESTION_MESSAGE);
+            if (input != null && !input.trim().isEmpty()) {
+                input = input.trim();
+                Order order = null;
+                if (input.startsWith("ORDER:")) {
+                    String[] parts = input.split(":");
+                    if (parts.length >= 3) {
+                        order = orderService.findOrderByQrToken(parts[2]);
+                    }
+                } else {
+                    try {
+                        int id = Integer.parseInt(input);
+                        order = orderService.findOrderById(id);
+                    } catch (NumberFormatException ignored) {}
+                }
+
+                if (order != null) {
+                    int choice = JOptionPane.showConfirmDialog(this,
+                            "Замовлення #" + order.getId() + "\n" +
+                                    "Користувач: " + order.getUserEmail() + "\n" +
+                                    "Книга: " + order.getBookTitle() + "\n" +
+                                    "Місце: " + (order.getSeatNumber() != null ? order.getSeatNumber() : "-") + "\n" +
+                                    "Статус: " + order.getStatus() + "\n\n" +
+                                    "Видати книгу (змінити статус на DELIVERED)?",
+                            "Знайдено замовлення",
+                            JOptionPane.YES_NO_OPTION);
+                    if (choice == JOptionPane.YES_OPTION) {
+                        orderService.updateOrderStatus(order.getId(), Order.Status.DELIVERED);
+                        refreshData();
+                        JOptionPane.showMessageDialog(this, "Статус замовлення змінено на DELIVERED");
+                    }
+                } else {
+                    JOptionPane.showMessageDialog(this, "Замовлення не знайдено или невірний QR-код", "Помилка", JOptionPane.ERROR_MESSAGE);
+                }
+            }
+        });
+
+        JButton closeBtn = new JButton("Закрити");
         closeBtn.addActionListener(e -> dispose());
         JPanel bp = new JPanel();
+        bp.add(scanQrBtn);
         bp.add(closeBtn);
         add(bp, BorderLayout.SOUTH);
     }

@@ -291,8 +291,9 @@
 
     <#if activeCategory == "orders">
         <div class="admin-section">
-            <div class="section-header">
+            <div class="section-header" style="display: flex; justify-content: space-between; align-items: center;">
                 <h3>📦 Керування замовленнями</h3>
+                <a href="/admin/scan-qr" class="btn btn-primary" style="padding: 6px 12px; font-size: 14px; text-decoration: none;">📷 Сканувати QR / Номер</a>
             </div>
             <div class="admin-table-wrapper">
                 <table class="admin-table">

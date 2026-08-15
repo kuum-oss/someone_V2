@@ -144,6 +144,7 @@ public class DatabaseInitializer {
                 "seat_number VARCHAR(50)," +
                 "start_time TIMESTAMP NULL," +
                 "end_time TIMESTAMP NULL," +
+                "qr_token VARCHAR(64)," +
                 "created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP," +
                 "FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE," +
                 "FOREIGN KEY (book_id) REFERENCES books(id) ON DELETE CASCADE" +
@@ -199,6 +200,7 @@ public class DatabaseInitializer {
             "ALTER TABLE orders ADD COLUMN seat_number VARCHAR(50)",
             "ALTER TABLE orders ADD COLUMN start_time TIMESTAMP NULL",
             "ALTER TABLE orders ADD COLUMN end_time TIMESTAMP NULL",
+            "ALTER TABLE orders ADD COLUMN qr_token VARCHAR(64)",
             "ALTER TABLE reading_progress ADD COLUMN settings TEXT",
             "ALTER TABLE reading_progress ADD COLUMN highlights TEXT",
             "ALTER TABLE reading_progress ADD COLUMN is_favorite BOOLEAN DEFAULT FALSE"

@@ -12,11 +12,15 @@ public class OrderService {
     private final OrderRepository orderRepository;
     private final BookRepository bookRepository;
     private final AdminDashboardService dashboardService;
+    private final QrCodeService qrCodeService;
+    private final EmailService emailService;
 
-    public OrderService(OrderRepository orderRepository, BookRepository bookRepository, AdminDashboardService dashboardService) {
+    public OrderService(OrderRepository orderRepository, BookRepository bookRepository, AdminDashboardService dashboardService, QrCodeService qrCodeService, EmailService emailService) {
         this.orderRepository = orderRepository;
         this.bookRepository = bookRepository;
         this.dashboardService = dashboardService;
+        this.qrCodeService = qrCodeService;
+        this.emailService = emailService;
     }
 
     public Order placeOrder(Integer userId, Integer bookId) {
@@ -45,6 +49,34 @@ public class OrderService {
         Order savedOrder = orderRepository.save(order);
         System.out.println("[DEBUG] Order saved with ID: " + savedOrder.getId());
         
+        // Generate QR Token
+        String token = qrCodeService.generateOrderToken(savedOrder.getId());
+        orderRepository.updateQrToken(savedOrder.getId(), token);
+        
+        // Retrieve full order with joined title and email
+        Order fullOrder = orderRepository.findById(savedOrder.getId());
+        
+        // Generate QR Code bytes in memory
+        try {
+            byte[] qrBytes = qrCodeService.generateQrCodePng(qrCodeService.getQrContent(fullOrder.getId(), fullOrder.getQrToken()), 250, 250);
+            fullOrder.setQrCode(qrBytes);
+            
+            // Send email async
+            if (fullOrder.getUserEmail() != null) {
+                new Thread(() -> {
+                    emailService.sendOrderQrEmail(
+                        fullOrder.getUserEmail(), 
+                        fullOrder.getId(), 
+                        fullOrder.getBookTitle(), 
+                        fullOrder.getSeatNumber(), 
+                        qrBytes
+                    );
+                }).start();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        
         // Notify admin
         String msg = "New order for physical book: " + book.getTitle();
         if (seatNumber != null) {
@@ -52,7 +84,7 @@ public class OrderService {
         }
         dashboardService.addNotification(null, msg);
         
-        return savedOrder;
+        return fullOrder;
     }
 
     public List<Order> getAllOrders() {
@@ -92,5 +124,25 @@ public class OrderService {
 
     public List<StoredBook> getPhysicalBooksForSale() {
         return bookRepository.findByType(StoredBook.BookType.PHYSICAL);
+    }
+
+    public byte[] getOrderQrCode(Integer orderId) {
+        Order order = orderRepository.findById(orderId);
+        if (order != null && order.getQrToken() != null) {
+            try {
+                return qrCodeService.generateQrCodePng(qrCodeService.getQrContent(order.getId(), order.getQrToken()), 250, 250);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return null;
+    }
+
+    public Order findOrderByQrToken(String token) {
+        return orderRepository.findByQrToken(token);
+    }
+
+    public Order findOrderById(Integer id) {
+        return orderRepository.findById(id);
     }
 }

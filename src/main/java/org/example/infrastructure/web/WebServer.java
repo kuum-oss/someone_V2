@@ -77,7 +77,9 @@ public class WebServer {
 
         this.authService = new AuthService(userRepository);
         this.dashboardService = new AdminDashboardService(bookRepository, notificationRepository);
-        this.orderService = new OrderService(orderRepository, bookRepository, dashboardService);
+        QrCodeService qrCodeService = new QrCodeService();
+        EmailService emailService = new EmailService();
+        this.orderService = new OrderService(orderRepository, bookRepository, dashboardService, qrCodeService, emailService);
         this.libraryService = new LibraryService(settingsRepository, orderRepository);
         this.readingService = new ReadingService(readingRepository);
         this.metadataGateway = new TikaMetadataAdapter();
@@ -711,11 +713,80 @@ public class WebServer {
             java.time.LocalDateTime start = java.time.LocalDateTime.now().withHour(hour % 24).withMinute(0).withSecond(0).withNano(0);
             java.time.LocalDateTime end = start.plusHours(duration);
 
-            orderService.placeOrder(user.getId(), bookId, seat, start, end);
-            ctx.redirect("/shop");
+            Order order = orderService.placeOrder(user.getId(), bookId, seat, start, end);
+            ctx.redirect("/order/confirmation/" + order.getId());
         });
 
+        
+        app.get("/order/confirmation/{orderId}", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.redirect("/"); return; }
+            int orderId = Integer.parseInt(ctx.pathParam("orderId"));
+            Order order = orderService.findOrderById(orderId);
+            if (order == null || (!order.getUserId().equals(user.getId()) && !user.isAdmin())) {
+                ctx.status(404).result("Order not found");
+                return;
+            }
+            Map<String, Object> model = createModel(ctx);
+            model.put("order", order);
+            render(ctx, "templates/order_confirmation.ftl", model);
+        });
+
+        app.get("/order/{orderId}/qr.png", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null) { ctx.status(401); return; }
+            int orderId = Integer.parseInt(ctx.pathParam("orderId"));
+            Order order = orderService.findOrderById(orderId);
+            if (order == null || (!order.getUserId().equals(user.getId()) && !user.isAdmin())) {
+                ctx.status(404).result("Order not found");
+                return;
+            }
+            byte[] qrBytes = orderService.getOrderQrCode(orderId);
+            if (qrBytes == null) {
+                ctx.status(404).result("QR code not found");
+                return;
+            }
+            ctx.contentType("image/png").result(qrBytes);
+        });
+
+        app.get("/admin/scan-qr", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null || !user.isAdmin()) { ctx.redirect("/"); return; }
+            Map<String, Object> model = createModel(ctx);
+            render(ctx, "templates/admin_scan_qr.ftl", model);
+        });
+
+        app.post("/admin/scan-qr", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user == null || !user.isAdmin()) { ctx.redirect("/"); return; }
+            
+            String query = ctx.formParam("query");
+            Order order = null;
+            if (query != null && !query.trim().isEmpty()) {
+                if (query.startsWith("ORDER:")) {
+                    String[] parts = query.split(":");
+                    if (parts.length >= 3) {
+                        order = orderService.findOrderByQrToken(parts[2]);
+                    }
+                } else {
+                    try {
+                        int id = Integer.parseInt(query.trim());
+                        order = orderService.findOrderById(id);
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+            
+            Map<String, Object> model = createModel(ctx);
+            if (order != null) {
+                model.put("foundOrder", order);
+            } else {
+                model.put("error", "Замовлення не знайдено або невірний QR-код.");
+            }
+            render(ctx, "templates/admin_scan_qr.ftl", model);
+        });
+        
         // --- Админка ---
+
         app.get("/admin", ctx -> {
             User user = ctx.sessionAttribute("currentUser");
             if(user!=null && user.isAdmin()){
@@ -800,6 +871,17 @@ public class WebServer {
                 Order.Status status = Order.Status.valueOf(ctx.formParam("status"));
                 orderService.updateOrderStatus(orderId, status);
                 ctx.redirect("/admin?category=orders");
+            } else ctx.status(403);
+        });
+
+        // Route used by admin_scan_qr.ftl: POST /admin/orders/{id}/status
+        app.post("/admin/orders/{id}/status", ctx -> {
+            User user = ctx.sessionAttribute("currentUser");
+            if (user != null && user.isAdmin()) {
+                int orderId = Integer.parseInt(ctx.pathParam("id"));
+                Order.Status status = Order.Status.valueOf(ctx.formParam("status"));
+                orderService.updateOrderStatus(orderId, status);
+                ctx.redirect("/admin/scan-qr");
             } else ctx.status(403);
         });
 

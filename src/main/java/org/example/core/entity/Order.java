@@ -11,6 +11,8 @@ public class Order {
     private String seatNumber;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private String qrToken;   // SHA-256 hashed token stored in DB
+    private byte[] qrCode;    // QR code PNG image bytes (transient, loaded on demand)
 
     // For UI display
     private String userEmail;
@@ -53,4 +55,9 @@ public class Order {
     public void setUserEmail(String userEmail) { this.userEmail = userEmail; }
     public String getBookTitle() { return bookTitle; }
     public void setBookTitle(String bookTitle) { this.bookTitle = bookTitle; }
+
+    public String getQrToken() { return qrToken; }
+    public void setQrToken(String qrToken) { this.qrToken = qrToken; }
+    public byte[] getQrCode() { return qrCode; }
+    public void setQrCode(byte[] qrCode) { this.qrCode = qrCode; }
 }

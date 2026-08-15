@@ -51,10 +51,21 @@ public class BookGridItem extends JPanel {
         titleLabel.setHorizontalAlignment(SwingConstants.CENTER);
         titleLabel.setVerticalAlignment(SwingConstants.TOP);
         titleLabel.setFont(titleLabel.getFont().deriveFont(Font.PLAIN, 11f));
-        titleLabel.setPreferredSize(new Dimension(120, 40));
+        titleLabel.setPreferredSize(new Dimension(120, 34));
+
+        JLabel statusLabel = new JLabel(metadataStatus(book));
+        statusLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        statusLabel.setFont(statusLabel.getFont().deriveFont(Font.BOLD, 10f));
+        statusLabel.setForeground(metadataWarning(book) ? new Color(190, 120, 0)
+                : new Color(45, 135, 75));
+
+        JPanel footer = new JPanel(new BorderLayout(0, 2));
+        footer.setOpaque(false);
+        footer.add(titleLabel, BorderLayout.CENTER);
+        footer.add(statusLabel, BorderLayout.SOUTH);
 
         add(coverLabel, BorderLayout.CENTER);
-        add(titleLabel, BorderLayout.SOUTH);
+        add(footer, BorderLayout.SOUTH);
 
         addMouseListener(new MouseAdapter() {
             @Override
@@ -72,5 +83,19 @@ public class BookGridItem extends JPanel {
         setOpaque(selected);
         setBackground(UIManager.getColor("List.selectionBackground"));
         repaint();
+    }
+
+    private String metadataStatus(Book book) {
+        return metadataWarning(book) ? "⚠ Требует проверки" : "✓ Проверена";
+    }
+
+    private boolean metadataWarning(Book book) {
+        return isUnknown(book.getTitle()) || isUnknown(book.getAuthor())
+                || isUnknown(book.getGenre()) || isUnknown(book.getYear());
+    }
+
+    private boolean isUnknown(String value) {
+        return value == null || value.isBlank() || "Unknown".equalsIgnoreCase(value)
+                || "Неизвестно".equalsIgnoreCase(value);
     }
 }
