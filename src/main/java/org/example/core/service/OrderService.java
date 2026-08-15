@@ -4,11 +4,15 @@ import org.example.core.entity.Order;
 import org.example.core.entity.StoredBook;
 import org.example.core.repository.BookRepository;
 import org.example.core.repository.OrderRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 public class OrderService {
+    private static final Logger logger = LoggerFactory.getLogger(OrderService.class);
+
     private final OrderRepository orderRepository;
     private final BookRepository bookRepository;
     private final AdminDashboardService dashboardService;
@@ -28,7 +32,7 @@ public class OrderService {
     }
 
     public Order placeOrder(Integer userId, Integer bookId, String seatNumber, LocalDateTime startTime, LocalDateTime endTime) {
-        System.out.println("[DEBUG] OrderService.placeOrder called for user " + userId + ", book " + bookId + ", seat " + seatNumber);
+        logger.debug("OrderService.placeOrder called for user {}, book {}, seat {}", userId, bookId, seatNumber);
         StoredBook book = bookRepository.findById(bookId)
                 .orElseThrow(() -> new IllegalArgumentException("Book not found"));
         
@@ -47,7 +51,7 @@ public class OrderService {
         
         Order order = new Order(null, userId, bookId, Order.Status.PENDING, LocalDateTime.now(), seatNumber, startTime, endTime);
         Order savedOrder = orderRepository.save(order);
-        System.out.println("[DEBUG] Order saved with ID: " + savedOrder.getId());
+        logger.debug("Order saved with ID: {}", savedOrder.getId());
         
         // Generate QR Token
         String token = qrCodeService.generateOrderToken(savedOrder.getId());
@@ -74,7 +78,7 @@ public class OrderService {
                 }).start();
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("Failed to generate QR code for order {}", fullOrder.getId(), e);
         }
         
         // Notify admin
@@ -132,7 +136,7 @@ public class OrderService {
             try {
                 return qrCodeService.generateQrCodePng(qrCodeService.getQrContent(order.getId(), order.getQrToken()), 250, 250);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("Failed to generate QR code for order {}", orderId, e);
             }
         }
         return null;
